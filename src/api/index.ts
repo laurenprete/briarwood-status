@@ -406,4 +406,79 @@ app.get('/status', async (c) => {
   }
 })
 
+// Health check endpoint (authenticated via shared token)
+app.get('/health', async (c) => {
+  const token = c.req.header('X-Health-Token')
+  const expected = process.env.HEALTH_CHECK_TOKEN
+  if (!expected || token !== expected) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  type CheckStatus = 'healthy' | 'degraded' | 'unhealthy'
+  const checks: Record<string, { status: CheckStatus; latencyMs?: number; error?: string }> = {}
+
+  // Check DynamoDB — try to read from monitors table
+  {
+    const start = Date.now()
+    try {
+      await listMonitors()
+      const latencyMs = Date.now() - start
+      checks.dynamodb = {
+        status: latencyMs < 100 ? 'healthy' : latencyMs < 500 ? 'degraded' : 'unhealthy',
+        latencyMs,
+      }
+    } catch (err) {
+      checks.dynamodb = {
+        status: 'unhealthy',
+        latencyMs: Date.now() - start,
+        error: err instanceof Error ? err.message : 'DynamoDB unreachable',
+      }
+    }
+  }
+
+  // Check Cognito — fetch JWKS endpoint
+  {
+    const region = process.env.COGNITO_REGION
+    const poolId = process.env.COGNITO_USER_POOL_ID
+    if (!region || !poolId) {
+      checks.auth = { status: 'unhealthy', error: 'Cognito env vars missing' }
+    } else {
+      const jwksUrl = `https://cognito-idp.${region}.amazonaws.com/${poolId}/.well-known/jwks.json`
+      const start = Date.now()
+      try {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 5000)
+        const res = await fetch(jwksUrl, { signal: controller.signal })
+        clearTimeout(timeout)
+        const latencyMs = Date.now() - start
+        checks.auth = {
+          status: res.ok ? 'healthy' : 'unhealthy',
+          latencyMs,
+          ...(!res.ok && { error: `JWKS returned ${res.status}` }),
+        }
+      } catch (err) {
+        checks.auth = {
+          status: 'unhealthy',
+          latencyMs: Date.now() - start,
+          error: err instanceof Error ? err.message : 'Cognito JWKS unreachable',
+        }
+      }
+    }
+  }
+
+  // Derive overall status
+  const statuses = Object.values(checks).map((c) => c.status)
+  let overall: CheckStatus = 'healthy'
+  if (statuses.includes('unhealthy')) overall = 'unhealthy'
+  else if (statuses.includes('degraded')) overall = 'degraded'
+
+  const body = {
+    status: overall,
+    timestamp: new Date().toISOString(),
+    checks,
+  }
+
+  return c.json(body, overall === 'unhealthy' ? 503 : 200)
+})
+
 export const handler = handle(app)

@@ -86,6 +86,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: 'us-east-1_UoxtyhxH5',
         COGNITO_CLIENT_ID: '40bcm1gp95r5sr3aes9qa3c4q4',
         COGNITO_REGION: 'us-east-1',
+        HEALTH_CHECK_TOKEN: healthCheckToken.secretValue.unsafeUnwrap(),
       },
     });
 
