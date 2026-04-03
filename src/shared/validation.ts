@@ -29,6 +29,12 @@ export const createMonitorSchema = z.object({
     .max(10, 'maximum 10 alert emails')
     .default([]),
   isActive: z.boolean().default(true),
+  healthCheckEnabled: z.boolean().default(false),
+  healthCheckPath: z
+    .string()
+    .trim()
+    .max(500, 'healthCheckPath must be 500 characters or fewer')
+    .default('/health'),
 })
 
 /** Schema for updating an existing monitor (all fields optional). */
@@ -62,6 +68,12 @@ export const updateMonitorSchema = z.object({
     .max(10, 'maximum 10 alert emails')
     .optional(),
   isActive: z.boolean().optional(),
+  healthCheckEnabled: z.boolean().optional(),
+  healthCheckPath: z
+    .string()
+    .trim()
+    .max(500, 'healthCheckPath must be 500 characters or fewer')
+    .optional(),
 })
 
 /** Extract the first human-readable error message from a Zod parse failure. */

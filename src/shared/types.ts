@@ -6,6 +6,8 @@ export interface Monitor {
   expectedStatus: number
   isActive: boolean
   alertEmails: string[]
+  healthCheckEnabled: boolean
+  healthCheckPath: string
   createdAt: string
   updatedAt: string
 }

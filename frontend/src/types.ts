@@ -6,6 +6,8 @@ export interface Monitor {
   expectedStatus: number
   isActive: boolean
   alertEmails: string[]
+  healthCheckEnabled: boolean
+  healthCheckPath: string
   createdAt: string
   updatedAt: string
 }
@@ -47,6 +49,8 @@ export type CreateMonitorBody = {
   expectedStatus?: number
   alertEmails?: string[]
   isActive?: boolean
+  healthCheckEnabled?: boolean
+  healthCheckPath?: string
 }
 
 export type UpdateMonitorBody = Partial<

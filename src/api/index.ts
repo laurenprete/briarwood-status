@@ -149,6 +149,8 @@ app.post('/monitors', authMiddleware, async (c) => {
       expectedStatus: body.expectedStatus,
       isActive: body.isActive,
       alertEmails: body.alertEmails,
+      healthCheckEnabled: body.healthCheckEnabled,
+      healthCheckPath: body.healthCheckPath,
       createdAt: now,
       updatedAt: now,
     }
@@ -158,6 +160,11 @@ app.post('/monitors', authMiddleware, async (c) => {
     // Run an immediate first check so it doesn't stay "unknown"
     if (monitor.isActive) {
       try {
+        // Use health check URL if enabled, otherwise the monitor URL
+        const fetchUrl = monitor.healthCheckEnabled
+          ? `${monitor.url.replace(/\/+$/, '')}${monitor.healthCheckPath.startsWith('/') ? monitor.healthCheckPath : `/${monitor.healthCheckPath}`}`
+          : monitor.url
+
         const start = Date.now()
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 10_000)
@@ -166,7 +173,7 @@ app.post('/monitors', authMiddleware, async (c) => {
         let error: string | undefined
 
         try {
-          const res = await fetch(monitor.url, {
+          const res = await fetch(fetchUrl, {
             signal: controller.signal,
             redirect: 'follow',
           })
@@ -260,6 +267,8 @@ app.put('/monitors/:id', authMiddleware, async (c) => {
       ...(body.alertEmails !== undefined && { alertEmails: body.alertEmails }),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
       ...(body.group !== undefined && { group: body.group }),
+      ...(body.healthCheckEnabled !== undefined && { healthCheckEnabled: body.healthCheckEnabled }),
+      ...(body.healthCheckPath !== undefined && { healthCheckPath: body.healthCheckPath }),
       id: existing.id,
       createdAt: existing.createdAt,
       updatedAt: new Date().toISOString(),

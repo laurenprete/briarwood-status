@@ -14,6 +14,18 @@ type CheckEngineResult = {
   error?: string
 }
 
+/** Returns the URL the checker should actually fetch for a monitor. */
+function getCheckUrl(monitor: Monitor): string {
+  if (!monitor.healthCheckEnabled) return monitor.url
+
+  // Append healthCheckPath to the monitor URL
+  const base = monitor.url.replace(/\/+$/, '')
+  const path = monitor.healthCheckPath.startsWith('/')
+    ? monitor.healthCheckPath
+    : `/${monitor.healthCheckPath}`
+  return `${base}${path}`
+}
+
 const SMTP2GO_ENDPOINT = 'https://api.smtp2go.com/v3/email/send'
 const SMTP2GO_FROM = 'Briarwood Status <contact@briarwoodsoftware.com>'
 const CHECK_TIMEOUT_MS = 10_000
@@ -48,8 +60,10 @@ export const handler = async (): Promise<void> => {
 
 async function processMonitor(monitor: Monitor): Promise<void> {
   try {
+    const checkUrl = getCheckUrl(monitor)
+
     // SSRF guard: skip monitors with private/internal URLs
-    const urlCheck = await validateMonitorUrl(monitor.url)
+    const urlCheck = await validateMonitorUrl(checkUrl)
     if (!urlCheck.valid) {
       console.warn(
         `[checker] Skipping ${monitor.name} [${monitor.id}]: ${urlCheck.error}`,
@@ -57,7 +71,7 @@ async function processMonitor(monitor: Monitor): Promise<void> {
       return
     }
 
-    const check = await runHttpCheck(monitor)
+    const check = await runHttpCheck(monitor, checkUrl)
 
     const checkResult: CheckResult = {
       monitorId: monitor.id,
@@ -109,13 +123,13 @@ async function processMonitor(monitor: Monitor): Promise<void> {
 // HTTP check engine
 // ---------------------------------------------------------------------------
 
-async function runHttpCheck(monitor: Monitor): Promise<CheckEngineResult> {
+async function runHttpCheck(monitor: Monitor, url: string): Promise<CheckEngineResult> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS)
   const started = Date.now()
 
   try {
-    const response = await fetch(monitor.url, {
+    const response = await fetch(url, {
       method: 'GET',
       signal: controller.signal,
       redirect: 'follow',

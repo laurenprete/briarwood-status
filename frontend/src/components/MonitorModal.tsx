@@ -14,6 +14,8 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
   const [expectedStatus, setExpectedStatus] = useState('200')
   const [alertEmails, setAlertEmails] = useState(monitor ? '' : 'contact@briarwoodsoftware.com')
   const [isActive, setIsActive] = useState(true)
+  const [healthCheckEnabled, setHealthCheckEnabled] = useState(false)
+  const [healthCheckPath, setHealthCheckPath] = useState('/health')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -25,6 +27,8 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
       setExpectedStatus(String(monitor.expectedStatus))
       setAlertEmails(monitor.alertEmails.join(', '))
       setIsActive(monitor.isActive)
+      setHealthCheckEnabled(monitor.healthCheckEnabled ?? false)
+      setHealthCheckPath(monitor.healthCheckPath ?? '/health')
     }
   }, [monitor])
 
@@ -47,6 +51,8 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
           .map((s) => s.trim())
           .filter(Boolean),
         isActive,
+        healthCheckEnabled,
+        healthCheckPath: healthCheckEnabled ? healthCheckPath : '/health',
       })
       onClose()
     } catch (err) {
@@ -138,6 +144,33 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
             />
             <span className="text-sm text-zinc-300">Active</span>
           </label>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={healthCheckEnabled}
+              onChange={(e) => setHealthCheckEnabled(e.target.checked)}
+              className="accent-teal-500"
+            />
+            <span className="text-sm text-zinc-300">Use health check endpoint</span>
+          </label>
+
+          {healthCheckEnabled && (
+            <div>
+              <label className="mb-1 block text-sm text-zinc-400">
+                Health Check Path
+              </label>
+              <input
+                className={inputCls}
+                value={healthCheckPath}
+                onChange={(e) => setHealthCheckPath(e.target.value)}
+                placeholder="/health"
+              />
+              <p className="mt-1 text-xs text-zinc-600">
+                Appended to the monitor URL for checks. Display link still uses the base URL.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <button
