@@ -8,6 +8,7 @@ export interface Monitor {
   alertEmails: string[]
   healthCheckEnabled: boolean
   healthCheckPath: string
+  isPublic: boolean
   createdAt: string
   updatedAt: string
 }

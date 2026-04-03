@@ -100,7 +100,7 @@ function computeDailyUptime(
 
 // --- In-memory cache for /status (30s TTL) ---
 
-let statusCache: { data: StatusSummary; expiresAt: number } | null = null
+let statusCache: { key: string; data: StatusSummary; expiresAt: number } | null = null
 const STATUS_CACHE_TTL_MS = 30_000
 
 // --- Routes ---
@@ -151,6 +151,7 @@ app.post('/monitors', authMiddleware, async (c) => {
       alertEmails: body.alertEmails,
       healthCheckEnabled: body.healthCheckEnabled,
       healthCheckPath: body.healthCheckPath,
+      isPublic: body.isPublic,
       createdAt: now,
       updatedAt: now,
     }
@@ -269,6 +270,7 @@ app.put('/monitors/:id', authMiddleware, async (c) => {
       ...(body.group !== undefined && { group: body.group }),
       ...(body.healthCheckEnabled !== undefined && { healthCheckEnabled: body.healthCheckEnabled }),
       ...(body.healthCheckPath !== undefined && { healthCheckPath: body.healthCheckPath }),
+      ...(body.isPublic !== undefined && { isPublic: body.isPublic }),
       id: existing.id,
       createdAt: existing.createdAt,
       updatedAt: new Date().toISOString(),
@@ -375,11 +377,33 @@ app.get('/monitors/:id/checks', async (c) => {
   }
 })
 
-// Public status summary (cached 30s)
+// Status summary — returns public monitors only unless authenticated
 app.get('/status', async (c) => {
   try {
-    // Return cached response if still valid
-    if (statusCache && Date.now() < statusCache.expiresAt) {
+    // Check if the caller is authenticated (optional — don't reject if missing)
+    let isAuthenticated = false
+    const authHeader = c.req.header('Authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const { jwtVerify, createRemoteJWKSet } = await import('jose')
+        const region = process.env.COGNITO_REGION!
+        const poolId = process.env.COGNITO_USER_POOL_ID!
+        const clientId = process.env.COGNITO_CLIENT_ID!
+        const jwksUrl = `https://cognito-idp.${region}.amazonaws.com/${poolId}/.well-known/jwks.json`
+        const JWKS = createRemoteJWKSet(new URL(jwksUrl))
+        const { payload } = await jwtVerify(authHeader.slice(7), JWKS, {
+          issuer: `https://cognito-idp.${region}.amazonaws.com/${poolId}`,
+          audience: clientId,
+        })
+        if (payload.token_use === 'id') isAuthenticated = true
+      } catch {
+        // Invalid token — treat as unauthenticated, don't reject
+      }
+    }
+
+    // Use separate caches for public vs authenticated views
+    const cacheKey = isAuthenticated ? 'auth' : 'public'
+    if (statusCache?.key === cacheKey && Date.now() < statusCache.expiresAt) {
       return c.json(statusCache.data)
     }
 
@@ -387,6 +411,11 @@ app.get('/status', async (c) => {
       listActiveMonitors(),
       getAllMonitorStates(),
     ])
+
+    // Filter to public monitors only if not authenticated
+    const visibleMonitors = isAuthenticated
+      ? activeMonitors
+      : activeMonitors.filter((m) => m.isPublic !== false)
 
     const stateMap = new Map<string, MonitorState>(
       states.map((s) => [s.monitorId, s])
@@ -398,7 +427,7 @@ app.get('/status', async (c) => {
     const threshold7d = now - RANGE_MS['7d']
 
     const monitors = await Promise.all(
-      activeMonitors.map(async (monitor) => {
+      visibleMonitors.map(async (monitor) => {
         const state = stateMap.get(monitor.id)
 
         // Query once for 30d, then compute 24h/7d from the same result set
@@ -449,6 +478,7 @@ app.get('/status', async (c) => {
 
     // Cache the result
     statusCache = {
+      key: cacheKey,
       data: summary,
       expiresAt: Date.now() + STATUS_CACHE_TTL_MS,
     }

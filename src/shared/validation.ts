@@ -35,6 +35,7 @@ export const createMonitorSchema = z.object({
     .trim()
     .max(500, 'healthCheckPath must be 500 characters or fewer')
     .default('/health'),
+  isPublic: z.boolean().default(true),
 })
 
 /** Schema for updating an existing monitor (all fields optional). */
@@ -74,6 +75,7 @@ export const updateMonitorSchema = z.object({
     .trim()
     .max(500, 'healthCheckPath must be 500 characters or fewer')
     .optional(),
+  isPublic: z.boolean().optional(),
 })
 
 /** Extract the first human-readable error message from a Zod parse failure. */

@@ -14,6 +14,7 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
   const [expectedStatus, setExpectedStatus] = useState('200')
   const [alertEmails, setAlertEmails] = useState(monitor ? '' : 'contact@briarwoodsoftware.com')
   const [isActive, setIsActive] = useState(true)
+  const [isPublic, setIsPublic] = useState(true)
   const [healthCheckEnabled, setHealthCheckEnabled] = useState(false)
   const [healthCheckPath, setHealthCheckPath] = useState('/health')
   const [saving, setSaving] = useState(false)
@@ -27,6 +28,7 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
       setExpectedStatus(String(monitor.expectedStatus))
       setAlertEmails(monitor.alertEmails.join(', '))
       setIsActive(monitor.isActive)
+      setIsPublic(monitor.isPublic ?? true)
       setHealthCheckEnabled(monitor.healthCheckEnabled ?? false)
       setHealthCheckPath(monitor.healthCheckPath ?? '/health')
     }
@@ -51,6 +53,7 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
           .map((s) => s.trim())
           .filter(Boolean),
         isActive,
+        isPublic,
         healthCheckEnabled,
         healthCheckPath: healthCheckEnabled ? healthCheckPath : '/health',
       })
@@ -135,15 +138,27 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
             />
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="accent-teal-500"
-            />
-            <span className="text-sm text-zinc-300">Active</span>
-          </label>
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="accent-teal-500"
+              />
+              <span className="text-sm text-zinc-300">Active</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="accent-teal-500"
+              />
+              <span className="text-sm text-zinc-300">Public</span>
+            </label>
+          </div>
 
           <label className="flex items-center gap-2 cursor-pointer">
             <input
