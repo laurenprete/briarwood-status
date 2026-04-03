@@ -342,13 +342,14 @@ app.post('/monitors/:id/health-check', authMiddleware, async (c) => {
       })
       clearTimeout(timeout)
 
-      const contentType = res.headers.get('content-type') || ''
-      if (contentType.includes('application/json')) {
-        const body = await res.json()
+      // Try to parse as JSON regardless of content-type header
+      const text = await res.text()
+      try {
+        const body = JSON.parse(text)
         return c.json({ httpStatus: res.status, ...body })
+      } catch {
+        return c.json({ httpStatus: res.status, status: res.ok ? 'healthy' : 'unhealthy' })
       }
-
-      return c.json({ httpStatus: res.status, status: res.ok ? 'healthy' : 'unhealthy' })
     } catch (err: any) {
       clearTimeout(timeout)
       return c.json({

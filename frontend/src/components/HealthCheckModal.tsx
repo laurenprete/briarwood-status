@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { runHealthCheck } from '../api'
 import type { HealthCheckResult } from '../api'
 
@@ -14,6 +14,8 @@ export default function HealthCheckModal({
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<HealthCheckResult | null>(null)
   const [error, setError] = useState('')
+
+  useEffect(() => { run() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const run = async () => {
     setLoading(true)
@@ -56,25 +58,10 @@ export default function HealthCheckModal({
           </button>
         </div>
 
-        {!result && !error && (
-          <div className="py-8 text-center">
-            <button
-              onClick={run}
-              disabled={loading}
-              className="rounded bg-teal-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-teal-500 disabled:opacity-50 transition"
-            >
-              {loading ? (
-                <>
-                  <i className="fa-solid fa-spinner fa-spin mr-2" />
-                  Checking...
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-heart-pulse mr-2" />
-                  Run Health Check
-                </>
-              )}
-            </button>
+        {loading && !result && (
+          <div className="py-8 text-center text-zinc-500">
+            <i className="fa-solid fa-spinner fa-spin mr-2" />
+            Checking...
           </div>
         )}
 
