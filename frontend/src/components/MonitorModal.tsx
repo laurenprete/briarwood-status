@@ -45,7 +45,7 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
     try {
       await onSave({
         name: name.trim(),
-        group: group.trim() || undefined,
+        group: group.trim(),
         url: url.trim(),
         expectedStatus: parseInt(expectedStatus) || 200,
         alertEmails: alertEmails

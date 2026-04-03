@@ -267,7 +267,7 @@ app.put('/monitors/:id', authMiddleware, async (c) => {
       }),
       ...(body.alertEmails !== undefined && { alertEmails: body.alertEmails }),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
-      ...(body.group !== undefined && { group: body.group }),
+      ...(body.group !== undefined && { group: body.group || undefined }),
       ...(body.healthCheckEnabled !== undefined && { healthCheckEnabled: body.healthCheckEnabled }),
       ...(body.healthCheckPath !== undefined && { healthCheckPath: body.healthCheckPath }),
       ...(body.isPublic !== undefined && { isPublic: body.isPublic }),

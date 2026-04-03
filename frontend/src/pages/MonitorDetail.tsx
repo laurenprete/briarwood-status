@@ -136,7 +136,7 @@ export default function MonitorDetail() {
               Check History
             </h2>
             <div className="overflow-hidden rounded-lg border border-zinc-800">
-              <div className="overflow-x-auto overflow-y-auto max-h-[480px]">
+              <div className="overflow-x-auto overflow-y-auto max-h-[480px] scrollbar-thin">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 z-10">
                     <tr className="border-b border-zinc-800 bg-zinc-900 text-left text-xs text-zinc-500">

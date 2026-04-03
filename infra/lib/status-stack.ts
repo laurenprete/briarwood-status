@@ -138,6 +138,12 @@ export class BriarwoodStatusStack extends cdk.Stack {
       platform: 'WEB',
       customRules: [
         {
+          // Proxy API requests to API Gateway (must come before SPA catch-all)
+          source: '/api/<*>',
+          target: `${httpApi.apiEndpoint}/api/<*>`,
+          status: '200',
+        },
+        {
           // SPA catch-all: serve index.html for any path that isn't a static file
           source: '</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>',
           target: '/index.html',
