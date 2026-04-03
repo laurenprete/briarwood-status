@@ -139,7 +139,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
       environmentVariables: [
         {
           name: 'VITE_API_URL',
-          value: httpApi.apiEndpoint,
+          value: `${httpApi.apiEndpoint}/api`,
         },
       ],
       // Build spec for when a git repo is connected later
@@ -173,7 +173,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
       environmentVariables: [
         {
           name: 'VITE_API_URL',
-          value: httpApi.apiEndpoint,
+          value: `${httpApi.apiEndpoint}/api`,
         },
       ],
     });
