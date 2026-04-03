@@ -135,79 +135,75 @@ export default function MonitorDetail() {
             <h2 className="mb-3 text-sm font-medium text-zinc-400">
               Check History
             </h2>
-            <div className="overflow-x-auto rounded-lg border border-zinc-800">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-800 bg-zinc-900/80 text-left text-xs text-zinc-500">
-                    <th className="px-4 py-2.5">Timestamp</th>
-                    <th className="px-4 py-2.5">Status</th>
-                    <th className="px-4 py-2.5">Status Code</th>
-                    <th className="px-4 py-2.5">Response Time</th>
-                    <th className="px-4 py-2.5">Error</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {checks.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-4 py-8 text-center text-zinc-600"
-                      >
-                        No check data for this range.
-                      </td>
+            <div className="overflow-hidden rounded-lg border border-zinc-800">
+              <div className="overflow-x-auto overflow-y-auto max-h-[480px]">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="border-b border-zinc-800 bg-zinc-900 text-left text-xs text-zinc-500">
+                      <th className="px-4 py-2.5">Timestamp</th>
+                      <th className="px-4 py-2.5">Status</th>
+                      <th className="px-4 py-2.5">Status Code</th>
+                      <th className="px-4 py-2.5">Response Time</th>
+                      <th className="px-4 py-2.5">Error</th>
                     </tr>
-                  ) : (
-                    [...checks]
-                      .sort(
-                        (a, b) =>
-                          new Date(b.timestamp).getTime() -
-                          new Date(a.timestamp).getTime(),
-                      )
-                      .slice(0, 100)
-                      .map((c, i) => (
-                        <tr
-                          key={i}
-                          className="border-b border-zinc-800/50 hover:bg-zinc-900/50"
+                  </thead>
+                  <tbody>
+                    {checks.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-4 py-8 text-center text-zinc-600"
                         >
-                          <td className="px-4 py-2 text-zinc-300">
-                            {new Date(c.timestamp).toLocaleString()}
-                          </td>
-                          <td className="px-4 py-2">
-                            <span
-                              className={`inline-flex items-center gap-1 ${
-                                c.isUp ? 'text-green-400' : 'text-red-400'
-                              }`}
-                            >
+                          No check data for this range.
+                        </td>
+                      </tr>
+                    ) : (
+                      [...checks]
+                        .sort(
+                          (a, b) =>
+                            new Date(b.timestamp).getTime() -
+                            new Date(a.timestamp).getTime(),
+                        )
+                        .map((c, i) => (
+                          <tr
+                            key={i}
+                            className="border-b border-zinc-800/50 hover:bg-zinc-900/50"
+                          >
+                            <td className="px-4 py-2 text-zinc-300">
+                              {new Date(c.timestamp).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-2">
                               <span
-                                className={`h-1.5 w-1.5 rounded-full ${
-                                  c.isUp ? 'bg-green-500' : 'bg-red-500'
+                                className={`inline-flex items-center gap-1 ${
+                                  c.isUp ? 'text-green-400' : 'text-red-400'
                                 }`}
-                              />
-                              {c.isUp ? 'Up' : 'Down'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 text-zinc-400">
-                            {c.statusCode ?? '—'}
-                          </td>
-                          <td className="px-4 py-2 text-zinc-400">
-                            {c.responseTime}ms
-                          </td>
-                          <td className="px-4 py-2 text-zinc-600">
-                            {c.error
-                              ? c.error.substring(0, 50)
-                              : '—'}
-                          </td>
-                        </tr>
-                      ))
-                  )}
-                </tbody>
-              </table>
+                              >
+                                <span
+                                  className={`h-1.5 w-1.5 rounded-full ${
+                                    c.isUp ? 'bg-green-500' : 'bg-red-500'
+                                  }`}
+                                />
+                                {c.isUp ? 'Up' : 'Down'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-zinc-400">
+                              {c.statusCode ?? '—'}
+                            </td>
+                            <td className="px-4 py-2 text-zinc-400">
+                              {c.responseTime}ms
+                            </td>
+                            <td className="px-4 py-2 text-zinc-600">
+                              {c.error
+                                ? c.error.substring(0, 50)
+                                : '—'}
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            {checks.length > 100 && (
-              <p className="mt-2 text-center text-xs text-zinc-600">
-                Showing latest 100 of {checks.length} checks
-              </p>
-            )}
           </div>
         </>
       )}
