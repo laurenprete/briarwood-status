@@ -66,7 +66,9 @@ export default function ResponseChart({
   // X-axis labels (show a few timestamps)
   const xLabelCount = Math.min(6, sorted.length)
   const xLabels = Array.from({ length: xLabelCount }, (_, i) => {
-    const idx = Math.round((i / (xLabelCount - 1)) * (sorted.length - 1))
+    const idx = xLabelCount <= 1
+      ? 0
+      : Math.round((i / (xLabelCount - 1)) * (sorted.length - 1))
     const d = new Date(sorted[idx].timestamp)
     return {
       label: d.toLocaleString(undefined, {
