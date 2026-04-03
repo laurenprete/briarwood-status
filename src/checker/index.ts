@@ -128,11 +128,19 @@ async function runHttpCheck(monitor: Monitor, url: string): Promise<CheckEngineR
   const timeout = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS)
   const started = Date.now()
 
+  // Send health check token header when using a health check endpoint
+  const headers: Record<string, string> = {}
+  if (monitor.healthCheckEnabled) {
+    const token = process.env.HEALTH_CHECK_TOKEN
+    if (token) headers['X-Health-Token'] = token
+  }
+
   try {
     const response = await fetch(url, {
       method: 'GET',
       signal: controller.signal,
       redirect: 'follow',
+      headers,
     })
 
     const responseTime = Date.now() - started

@@ -48,6 +48,12 @@ export class BriarwoodStatusStack extends cdk.Stack {
       'briarwood/smtp2go-api-key',
     );
 
+    const healthCheckToken = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'HealthCheckToken',
+      'briarwood/health-check-token',
+    );
+
     // ─── Lambda Functions ──────────────────────────────────────────────
 
     const checkerFn = new lambda.Function(this, 'CheckerLambda', {
@@ -62,6 +68,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
         CHECK_RESULTS_TABLE: checkResultsTable.tableName,
         MONITOR_STATE_TABLE: monitorStateTable.tableName,
         SMTP2GO_API_KEY: smtp2goSecret.secretValue.unsafeUnwrap(),
+        HEALTH_CHECK_TOKEN: healthCheckToken.secretValue.unsafeUnwrap(),
       },
     });
 
