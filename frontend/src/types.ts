@@ -31,6 +31,7 @@ export interface StatusMonitor {
   uptime24h: number | null
   uptime7d: number | null
   uptime30d: number | null
+  dailyUptime: Array<{ date: string; uptime: number | null }>
 }
 
 export interface StatusSummary {

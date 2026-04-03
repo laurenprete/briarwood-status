@@ -78,7 +78,7 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
           <span>{timeAgo(m.lastCheckedAt)}</span>
         </div>
       </div>
-      <UptimeBar uptimePercent={m.uptime30d} />
+      <UptimeBar dailyUptime={m.dailyUptime} />
     </div>
   )
 }

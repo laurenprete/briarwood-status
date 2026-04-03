@@ -65,6 +65,39 @@ function parseRange(raw: string | undefined): string {
   return '24h'
 }
 
+/**
+ * Compute per-day uptime percentages for the last N days.
+ * Returns an array of { date, uptime } from oldest to newest.
+ * uptime is null if no checks occurred that day.
+ */
+function computeDailyUptime(
+  checks: CheckResult[],
+  days: number,
+  nowMs: number
+): Array<{ date: string; uptime: number | null }> {
+  // Build day buckets (midnight UTC boundaries)
+  const result: Array<{ date: string; uptime: number | null }> = []
+  const msPerDay = 24 * 60 * 60 * 1000
+
+  for (let i = days - 1; i >= 0; i--) {
+    const dayStart = new Date(nowMs - i * msPerDay)
+    dayStart.setUTCHours(0, 0, 0, 0)
+    const dayEnd = new Date(dayStart.getTime() + msPerDay)
+
+    const dayChecks = checks.filter((c) => {
+      const t = new Date(c.timestamp).getTime()
+      return t >= dayStart.getTime() && t < dayEnd.getTime()
+    })
+
+    result.push({
+      date: dayStart.toISOString().slice(0, 10),
+      uptime: calculateUptime(dayChecks),
+    })
+  }
+
+  return result
+}
+
 // --- In-memory cache for /status (30s TTL) ---
 
 let statusCache: { data: StatusSummary; expiresAt: number } | null = null
@@ -314,6 +347,9 @@ app.get('/status', async (c) => {
           (c) => new Date(c.timestamp).getTime() >= threshold24h
         )
 
+        // Compute per-day uptime for the last 30 days (oldest first)
+        const dailyUptime = computeDailyUptime(checks30d, 30, now)
+
         return {
           id: monitor.id,
           name: monitor.name,
@@ -325,6 +361,7 @@ app.get('/status', async (c) => {
           uptime24h: calculateUptime(checks24h),
           uptime7d: calculateUptime(checks7d),
           uptime30d: calculateUptime(checks30d),
+          dailyUptime,
         }
       })
     )
