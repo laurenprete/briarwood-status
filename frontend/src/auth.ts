@@ -1,5 +1,6 @@
-const COGNITO_ENDPOINT = 'https://cognito-idp.us-east-1.amazonaws.com/'
-const CLIENT_ID = '40bcm1gp95r5sr3aes9qa3c4q4'
+const COGNITO_REGION = import.meta.env.VITE_COGNITO_REGION || 'us-east-1'
+const COGNITO_ENDPOINT = `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/`
+const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID
 
 const ID_TOKEN_KEY = 'briarwood_id_token'
 const ACCESS_TOKEN_KEY = 'briarwood_access_token'

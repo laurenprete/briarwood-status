@@ -20,11 +20,3 @@ Thumbs.db
 # Environment / secrets
 .env
 .env.*
-
-# Test artifacts
-response.json
-response2.json
-
-# One-time migration (delete after migration)
-infra/lib/status-stack-transition.ts
-scripts/migrate-to-amplify.ps1

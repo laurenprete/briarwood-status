@@ -141,8 +141,16 @@ export class BriarwoodStatusStack extends cdk.Stack {
           name: 'VITE_API_URL',
           value: `${httpApi.apiEndpoint}/api`,
         },
+        {
+          name: 'VITE_COGNITO_CLIENT_ID',
+          value: '40bcm1gp95r5sr3aes9qa3c4q4',
+        },
+        {
+          name: 'VITE_COGNITO_REGION',
+          value: 'us-east-1',
+        },
       ],
-      // Build spec for when a git repo is connected later
+      // Build spec
       buildSpec: [
         'version: 1',
         'applications:',
@@ -174,6 +182,14 @@ export class BriarwoodStatusStack extends cdk.Stack {
         {
           name: 'VITE_API_URL',
           value: `${httpApi.apiEndpoint}/api`,
+        },
+        {
+          name: 'VITE_COGNITO_CLIENT_ID',
+          value: '40bcm1gp95r5sr3aes9qa3c4q4',
+        },
+        {
+          name: 'VITE_COGNITO_REGION',
+          value: 'us-east-1',
         },
       ],
     });
