@@ -61,3 +61,7 @@ export function updateMonitor(
 export function deleteMonitor(id: string): Promise<{ success: boolean }> {
   return request(`/monitors/${id}`, { method: 'DELETE' })
 }
+
+export function runHealthCheck(id: string): Promise<Record<string, unknown>> {
+  return request(`/monitors/${id}/health-check`, { method: 'POST' })
+}

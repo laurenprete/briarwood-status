@@ -7,6 +7,7 @@ import {
 } from '../api'
 import type { Monitor, CreateMonitorBody } from '../types'
 import MonitorModal from '../components/MonitorModal'
+import HealthCheckModal from '../components/HealthCheckModal'
 
 export default function AdminPage() {
   const [monitors, setMonitors] = useState<Monitor[]>([])
@@ -19,6 +20,9 @@ export default function AdminPage() {
 
   // Delete confirmation
   const [deleting, setDeleting] = useState<string | null>(null)
+
+  // Health check modal
+  const [healthCheckMonitor, setHealthCheckMonitor] = useState<Monitor | null>(null)
 
   const fetchMonitors = useCallback(async () => {
     try {
@@ -179,6 +183,15 @@ export default function AdminPage() {
                       </span>
                     ) : (
                       <span className="inline-flex gap-2">
+                        {m.healthCheckEnabled && (
+                          <button
+                            onClick={() => setHealthCheckMonitor(m)}
+                            className="rounded px-2 py-1 text-xs text-zinc-400 hover:bg-teal-500/10 hover:text-teal-400 transition"
+                            title="Run health check"
+                          >
+                            <i className="fa-solid fa-heart-pulse" />
+                          </button>
+                        )}
                         <button
                           onClick={() => openEdit(m)}
                           className="rounded px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition"
@@ -206,6 +219,14 @@ export default function AdminPage() {
           monitor={editing}
           onSave={handleSave}
           onClose={() => setModalOpen(false)}
+        />
+      )}
+
+      {healthCheckMonitor && (
+        <HealthCheckModal
+          monitorId={healthCheckMonitor.id}
+          monitorName={healthCheckMonitor.name}
+          onClose={() => setHealthCheckMonitor(null)}
         />
       )}
     </div>

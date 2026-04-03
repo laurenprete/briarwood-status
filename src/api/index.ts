@@ -307,6 +307,60 @@ app.delete('/monitors/:id', authMiddleware, async (c) => {
   }
 })
 
+// Proxy a health check request (auth required, keeps token server-side)
+app.post('/monitors/:id/health-check', authMiddleware, async (c) => {
+  try {
+    const id = c.req.param('id')
+    const monitor = await getMonitor(id)
+    if (!monitor) {
+      return c.json({ error: 'Monitor not found' }, 404)
+    }
+    if (!monitor.healthCheckEnabled) {
+      return c.json({ error: 'Health check not enabled for this monitor' }, 400)
+    }
+
+    const base = monitor.url.replace(/\/+$/, '')
+    const path = monitor.healthCheckPath.startsWith('/')
+      ? monitor.healthCheckPath
+      : `/${monitor.healthCheckPath}`
+    const healthUrl = `${base}${path}`
+
+    const headers: Record<string, string> = {}
+    const token = process.env.HEALTH_CHECK_TOKEN
+    if (token) headers['X-Health-Token'] = token
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+
+    try {
+      const res = await fetch(healthUrl, {
+        method: 'GET',
+        signal: controller.signal,
+        headers,
+      })
+      clearTimeout(timeout)
+
+      const contentType = res.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const body = await res.json()
+        return c.json({ httpStatus: res.status, ...body })
+      }
+
+      return c.json({ httpStatus: res.status, status: res.ok ? 'healthy' : 'unhealthy' })
+    } catch (err: any) {
+      clearTimeout(timeout)
+      return c.json({
+        httpStatus: null,
+        status: 'unhealthy',
+        error: err.name === 'AbortError' ? 'Timeout (10s)' : err.message || 'Network error',
+      })
+    }
+  } catch (err) {
+    console.error('[api] POST /monitors/:id/health-check failed', err)
+    return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
 // Get check history for a monitor
 app.get('/monitors/:id/checks', async (c) => {
   try {
