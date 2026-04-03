@@ -95,7 +95,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
 
     const scheduleRule = new events.Rule(this, 'CheckScheduleRule', {
       ruleName: 'briarwood-status-check-schedule',
-      schedule: events.Schedule.rate(cdk.Duration.minutes(5)),
+      schedule: events.Schedule.rate(cdk.Duration.minutes(2)),
     });
     scheduleRule.addTarget(new eventsTargets.LambdaFunction(checkerFn));
 
