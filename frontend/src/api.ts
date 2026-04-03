@@ -62,6 +62,14 @@ export function deleteMonitor(id: string): Promise<{ success: boolean }> {
   return request(`/monitors/${id}`, { method: 'DELETE' })
 }
 
-export function runHealthCheck(id: string): Promise<Record<string, unknown>> {
+export interface HealthCheckResult {
+  httpStatus: number | null
+  status: string
+  timestamp?: string
+  checks?: Record<string, { status: string; latencyMs?: number; error?: string }>
+  error?: string
+}
+
+export function runHealthCheck(id: string): Promise<HealthCheckResult> {
   return request(`/monitors/${id}/health-check`, { method: 'POST' })
 }

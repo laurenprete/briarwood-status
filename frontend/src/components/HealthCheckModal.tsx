@@ -1,19 +1,6 @@
 import { useState } from 'react'
 import { runHealthCheck } from '../api'
-
-interface HealthCheck {
-  status: string
-  latencyMs?: number
-  error?: string
-}
-
-interface HealthResult {
-  httpStatus: number | null
-  status: string
-  timestamp?: string
-  checks?: Record<string, HealthCheck>
-  error?: string
-}
+import type { HealthCheckResult } from '../api'
 
 export default function HealthCheckModal({
   monitorId,
@@ -25,7 +12,7 @@ export default function HealthCheckModal({
   onClose: () => void
 }) {
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<HealthResult | null>(null)
+  const [result, setResult] = useState<HealthCheckResult | null>(null)
   const [error, setError] = useState('')
 
   const run = async () => {
@@ -33,7 +20,7 @@ export default function HealthCheckModal({
     setError('')
     setResult(null)
     try {
-      const data = (await runHealthCheck(monitorId)) as HealthResult
+      const data = await runHealthCheck(monitorId)
       setResult(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to run health check')
