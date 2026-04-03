@@ -45,7 +45,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
     const smtp2goSecret = secretsmanager.Secret.fromSecretNameV2(
       this,
       'Smtp2goSecret',
-      'briarwood-status/smtp2go-api-key',
+      'briarwood/smtp2go-api-key',
     );
 
     // ─── Lambda Functions ──────────────────────────────────────────────
