@@ -100,7 +100,6 @@ export const createGroupSchema = z.object({
     .optional(),
   brand: z.object({
     primary: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'primary must be a hex color'),
-    accent: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'accent must be a hex color').optional(),
   }).optional(),
   isActive: z.boolean().default(true),
 })
@@ -114,7 +113,6 @@ export const updateGroupSchema = z.object({
     .optional(),
   brand: z.object({
     primary: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'primary must be a hex color'),
-    accent: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'accent must be a hex color').optional(),
   }).optional()
     .nullable(),
   isActive: z.boolean().optional(),

@@ -58,7 +58,7 @@ const overallConfig = {
 
 function MonitorCard({ m }: { m: StatusMonitor }) {
   return (
-    <div className="rounded-lg border bg-zinc-900 p-4" style={{ borderColor: 'color-mix(in srgb, var(--brand-primary) 25%, #27272a)' }}>
+    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span
@@ -118,7 +118,7 @@ function MonitorGroups({ monitors }: { monitors: StatusMonitor[] }) {
       {groups.map((g) => (
         <div key={g.name}>
           {showHeaders && (
-            <h2 className="mb-2 border-b pb-1.5 text-xs font-medium uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, var(--brand-primary) 30%, #27272a)', color: 'var(--brand-accent)' }}>
+            <h2 className="mb-2 border-b border-zinc-800 pb-1.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
               {g.name}
             </h2>
           )}
@@ -168,33 +168,27 @@ export default function StatusPage() {
   const oc = overallConfig[filteredOverall]
 
   return (
-    <div
-      className="min-h-screen bg-zinc-950 font-sans"
-      style={{
-        '--brand-primary': branding?.brand?.primary ?? '#14b8a6',
-        '--brand-accent': branding?.brand?.accent ?? branding?.brand?.primary ?? '#2dd4bf',
-      } as React.CSSProperties}
-    >
-      {/* Brand accent bar */}
-      <div className="h-1" style={{ backgroundColor: 'var(--brand-primary)' }} />
-
+    <div className="min-h-screen bg-zinc-950 font-sans">
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50">
+      <header
+        className="border-b border-zinc-800"
+        style={{ backgroundColor: branding?.brand?.primary ?? '#18181b' }}
+      >
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">
             {branding?.logoUrl ? (
               <img src={branding.logoUrl} alt="" className="h-8 w-8 object-contain" />
             ) : (
-              <i className="fa-solid fa-shield-halved text-xl" style={{ color: 'var(--brand-primary)' }} />
+              <i className="fa-solid fa-shield-halved text-xl text-white/80" />
             )}
-            <span className="text-base font-semibold tracking-tight" style={{ color: 'var(--brand-accent)' }}>
+            <span className="text-base font-semibold tracking-tight text-white">
               {branding?.name
                 ? `${branding.name} System Status`
                 : 'Briarwood Software System Status'}
             </span>
           </div>
           {isLoggedIn() && (
-            <a href="/dashboard" className="text-xs text-zinc-500 hover:text-zinc-300">
+            <a href="/dashboard" className="text-xs text-white/50 hover:text-white/80">
               <i className="fa-solid fa-gear" /> Admin
             </a>
           )}
@@ -221,26 +215,10 @@ export default function StatusPage() {
             {/* Overall status banner */}
             {oc && (
               <div
-                className={`mb-5 flex items-center gap-3 rounded-lg px-4 py-3 ${
-                  filteredOverall === 'operational'
-                    ? 'border'
-                    : oc.bg
-                }`}
-                style={filteredOverall === 'operational' ? {
-                  backgroundColor: 'color-mix(in srgb, var(--brand-primary) 10%, transparent)',
-                  borderColor: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)',
-                } : undefined}
+                className={`mb-5 flex items-center gap-3 rounded-lg ${oc.bg} px-4 py-3`}
               >
-                <i
-                  className={`fa-solid ${oc.icon} text-lg ${filteredOverall === 'operational' ? '' : oc.text}`}
-                  style={filteredOverall === 'operational' ? { color: 'var(--brand-primary)' } : undefined}
-                />
-                <span
-                  className={`text-sm font-medium ${filteredOverall === 'operational' ? '' : oc.text}`}
-                  style={filteredOverall === 'operational' ? { color: 'var(--brand-primary)' } : undefined}
-                >
-                  {oc.label}
-                </span>
+                <i className={`fa-solid ${oc.icon} text-lg ${oc.text}`} />
+                <span className={`text-sm font-medium ${oc.text}`}>{oc.label}</span>
               </div>
             )}
 
@@ -265,7 +243,7 @@ export default function StatusPage() {
       {/* Footer */}
       <footer className="border-t border-zinc-800 py-3 text-center text-xs text-zinc-600">
         Powered by{' '}
-        <a href="https://briarwoodsoftware.com" target="_blank" rel="noreferrer" className="font-medium text-zinc-400" style={{ ['--hover-color' as string]: 'var(--brand-accent)' }} onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-accent)')} onMouseLeave={(e) => (e.currentTarget.style.color = '')}>Briarwood Software</a>
+        <a href="https://briarwoodsoftware.com" target="_blank" rel="noreferrer" className="font-medium text-zinc-400 hover:text-zinc-200">Briarwood Software</a>
       </footer>
     </div>
   )

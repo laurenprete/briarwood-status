@@ -7,7 +7,7 @@ interface Props {
   onSave: (data: {
     name: string
     slug?: string
-    brand?: { primary: string; accent?: string }
+    brand?: { primary: string }
     isActive?: boolean
     logoUrl?: string | null
     logoKey?: string | null
@@ -28,9 +28,7 @@ export default function GroupModal({ group, onSave, onClose }: Props) {
   const [slug, setSlug] = useState('')
   const [customBrand, setCustomBrand] = useState(false)
   const [primary, setPrimary] = useState('#0d9488')
-  const [accent, setAccent] = useState('#14b8a6')
   const [primaryHex, setPrimaryHex] = useState('#0d9488')
-  const [accentHex, setAccentHex] = useState('#14b8a6')
   const [isActive, setIsActive] = useState(true)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -49,10 +47,6 @@ export default function GroupModal({ group, onSave, onClose }: Props) {
         setCustomBrand(true)
         setPrimary(group.brand.primary)
         setPrimaryHex(group.brand.primary)
-        if (group.brand.accent) {
-          setAccent(group.brand.accent)
-          setAccentHex(group.brand.accent)
-        }
       }
       if (group.logoUrl) {
         setLogoPreview(group.logoUrl)
@@ -76,18 +70,6 @@ export default function GroupModal({ group, onSave, onClose }: Props) {
     setPrimaryHex(val)
     if (/^#[0-9a-fA-F]{6}$/.test(val)) {
       setPrimary(val)
-    }
-  }
-
-  const handleAccentChange = (val: string) => {
-    setAccent(val)
-    setAccentHex(val)
-  }
-
-  const handleAccentHexChange = (val: string) => {
-    setAccentHex(val)
-    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
-      setAccent(val)
     }
   }
 
@@ -123,9 +105,7 @@ export default function GroupModal({ group, onSave, onClose }: Props) {
       await onSave({
         name: name.trim(),
         ...(isEditing ? {} : { slug: slug.trim() }),
-        brand: customBrand
-          ? { primary, accent: accent || undefined }
-          : undefined,
+        brand: customBrand ? { primary } : undefined,
         isActive,
         ...(logoUrl !== undefined ? { logoUrl, logoKey } : {}),
       })
@@ -194,50 +174,26 @@ export default function GroupModal({ group, onSave, onClose }: Props) {
           </label>
 
           {customBrand && (
-            <div className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-800/30 p-3">
-              {/* Primary color */}
-              <div>
-                <label className="mb-1.5 block text-xs text-zinc-500">
-                  Primary color
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={primary}
-                    onChange={(e) => handlePrimaryChange(e.target.value)}
-                    className="h-8 w-10 cursor-pointer rounded border border-zinc-700 bg-transparent p-0.5"
-                  />
-                  <input
-                    className={`${inputCls} font-mono`}
-                    value={primaryHex}
-                    onChange={(e) => handlePrimaryHexChange(e.target.value)}
-                    placeholder="#0d9488"
-                    maxLength={7}
-                  />
-                </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-800/30 p-3">
+              <label className="mb-1.5 block text-xs text-zinc-500">
+                Brand color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={primary}
+                  onChange={(e) => handlePrimaryChange(e.target.value)}
+                  className="h-8 w-10 cursor-pointer rounded border border-zinc-700 bg-transparent p-0.5"
+                />
+                <input
+                  className={`${inputCls} font-mono`}
+                  value={primaryHex}
+                  onChange={(e) => handlePrimaryHexChange(e.target.value)}
+                  placeholder="#0d9488"
+                  maxLength={7}
+                />
               </div>
-
-              {/* Accent color */}
-              <div>
-                <label className="mb-1.5 block text-xs text-zinc-500">
-                  Accent color
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={accent}
-                    onChange={(e) => handleAccentChange(e.target.value)}
-                    className="h-8 w-10 cursor-pointer rounded border border-zinc-700 bg-transparent p-0.5"
-                  />
-                  <input
-                    className={`${inputCls} font-mono`}
-                    value={accentHex}
-                    onChange={(e) => handleAccentHexChange(e.target.value)}
-                    placeholder="#14b8a6"
-                    maxLength={7}
-                  />
-                </div>
-              </div>
+              <p className="mt-1.5 text-xs text-zinc-600">Used as the navbar background on the public status page.</p>
             </div>
           )}
 

@@ -6,7 +6,6 @@ export interface Group {
   logoKey?: string
   brand?: {
     primary: string
-    accent?: string
   }
   createdAt: string
   updatedAt: string

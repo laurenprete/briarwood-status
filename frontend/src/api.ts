@@ -82,7 +82,7 @@ export function getGroups(): Promise<Group[]> {
   return request('/groups')
 }
 
-export function createGroup(body: { name: string; slug?: string; brand?: { primary: string; accent?: string }; isActive?: boolean }): Promise<Group> {
+export function createGroup(body: { name: string; slug?: string; brand?: { primary: string }; isActive?: boolean }): Promise<Group> {
   return request('/groups', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
