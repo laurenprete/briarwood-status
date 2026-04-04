@@ -4,6 +4,7 @@ import { getStatus, getMonitorChecks } from '../api'
 import type { StatusMonitor, CheckResult } from '../types'
 import StatusBadge from '../components/StatusBadge'
 import ResponseChart from '../components/ResponseChart'
+import HealthCheckModal from '../components/HealthCheckModal'
 
 type Range = '24h' | '7d' | '30d'
 type StatusFilter = 'all' | 'healthy' | 'degraded' | 'down'
@@ -16,6 +17,7 @@ export default function MonitorDetail() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showHealthCheck, setShowHealthCheck] = useState(false)
 
   const fetchData = useCallback(async () => {
     if (!id) return
@@ -87,6 +89,17 @@ export default function MonitorDetail() {
               <p className="mt-1 text-sm text-zinc-500">{monitor.url}</p>
             </div>
 
+            <div className="flex items-center gap-3">
+            {monitor.healthCheckEnabled && (
+              <button
+                onClick={() => setShowHealthCheck(true)}
+                className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-sm text-zinc-400 hover:text-teal-400 transition"
+                title="Run health check"
+              >
+                <i className="fa-solid fa-heart-pulse mr-1.5" />
+                Health Check
+              </button>
+            )}
             {/* Range toggle */}
             <div className="flex rounded-lg border border-zinc-800 bg-zinc-900/50">
               {(['24h', '7d', '30d'] as Range[]).map((r) => (
@@ -102,6 +115,7 @@ export default function MonitorDetail() {
                   {r}
                 </button>
               ))}
+            </div>
             </div>
           </div>
 
@@ -319,6 +333,14 @@ export default function MonitorDetail() {
             </div>
           </div>
         </>
+      )}
+
+      {showHealthCheck && monitor && (
+        <HealthCheckModal
+          monitorId={monitor.id}
+          monitorName={monitor.name}
+          onClose={() => setShowHealthCheck(false)}
+        />
       )}
     </div>
   )
