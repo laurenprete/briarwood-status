@@ -7,7 +7,7 @@ import {
   ScanCommand,
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb'
-import type { Monitor, CheckResult, MonitorState } from './types'
+import type { Monitor, CheckResult, MonitorState, Group } from './types'
 
 const client = new DynamoDBClient({})
 const ddb = DynamoDBDocumentClient.from(client)
@@ -15,6 +15,7 @@ const ddb = DynamoDBDocumentClient.from(client)
 const MONITORS_TABLE = process.env.MONITORS_TABLE!
 const CHECK_RESULTS_TABLE = process.env.CHECK_RESULTS_TABLE!
 const MONITOR_STATE_TABLE = process.env.MONITOR_STATE_TABLE!
+const GROUPS_TABLE = process.env.GROUPS_TABLE!
 
 // --- Monitors ---
 
@@ -207,4 +208,41 @@ export async function getAllMonitorStates(): Promise<MonitorState[]> {
   } while (lastKey)
 
   return items
+}
+
+// --- Groups ---
+
+export async function listGroups(): Promise<Group[]> {
+  const items: Group[] = []
+  let lastKey: Record<string, any> | undefined
+  do {
+    const res = await ddb.send(
+      new ScanCommand({
+        TableName: GROUPS_TABLE,
+        ExclusiveStartKey: lastKey,
+      })
+    )
+    if (res.Items) items.push(...(res.Items as Group[]))
+    lastKey = res.LastEvaluatedKey
+  } while (lastKey)
+  return items
+}
+
+export async function getGroup(slug: string): Promise<Group | null> {
+  const res = await ddb.send(
+    new GetCommand({ TableName: GROUPS_TABLE, Key: { slug } })
+  )
+  return (res.Item as Group) ?? null
+}
+
+export async function putGroup(group: Group): Promise<void> {
+  await ddb.send(
+    new PutCommand({ TableName: GROUPS_TABLE, Item: group })
+  )
+}
+
+export async function deleteGroup(slug: string): Promise<void> {
+  await ddb.send(
+    new DeleteCommand({ TableName: GROUPS_TABLE, Key: { slug } })
+  )
 }
