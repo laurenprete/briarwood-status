@@ -65,9 +65,11 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
             className={`inline-block h-2.5 w-2.5 rounded-full ${
               m.currentStatus === 'up'
                 ? 'bg-green-500'
-                : m.currentStatus === 'down'
-                  ? 'bg-red-500'
-                  : 'bg-zinc-500'
+                : m.currentStatus === 'degraded'
+                  ? 'bg-amber-500'
+                  : m.currentStatus === 'down'
+                    ? 'bg-red-500'
+                    : 'bg-zinc-500'
             }`}
           />
           <span className="text-sm font-medium text-zinc-100">{m.name}</span>
@@ -80,6 +82,24 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
         </div>
       </div>
       <UptimeBar dailyUptime={m.dailyUptime} />
+      {m.lastChecks && Object.keys(m.lastChecks).length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+          {Object.entries(m.lastChecks).map(([name, check]) => (
+            <div key={name} className="flex items-center gap-1.5 text-xs">
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  check.status === 'healthy'
+                    ? 'bg-green-500'
+                    : check.status === 'degraded'
+                      ? 'bg-amber-500'
+                      : 'bg-red-500'
+                }`}
+              />
+              <span className="text-zinc-500">{name}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -134,7 +154,7 @@ export default function StatusPage() {
   const filteredOverall = useMemo((): 'operational' | 'degraded' | 'outage' => {
     if (!groupFilter || !status) return status?.overall ?? 'operational'
     if (filteredMonitors.some((m) => m.currentStatus === 'down')) return 'outage'
-    if (filteredMonitors.some((m) => m.currentStatus === 'unknown')) return 'degraded'
+    if (filteredMonitors.some((m) => m.currentStatus === 'degraded' || m.currentStatus === 'unknown')) return 'degraded'
     return 'operational'
   }, [status, groupFilter, filteredMonitors])
 
