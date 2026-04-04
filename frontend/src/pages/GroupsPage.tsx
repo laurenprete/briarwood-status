@@ -146,18 +146,10 @@ export default function GroupsPage() {
                   <div
                     className="h-5 w-5 rounded border border-zinc-700"
                     style={{ backgroundColor: g.brand.primary }}
-                    title={`Primary: ${g.brand.primary}`}
+                    title={g.brand.primary}
                   />
-                  {g.brand.accent && (
-                    <div
-                      className="h-5 w-5 rounded border border-zinc-700"
-                      style={{ backgroundColor: g.brand.accent }}
-                      title={`Accent: ${g.brand.accent}`}
-                    />
-                  )}
                   <span className="text-xs text-zinc-600 font-mono">
                     {g.brand.primary}
-                    {g.brand.accent ? ` / ${g.brand.accent}` : ''}
                   </span>
                 </div>
               )}
