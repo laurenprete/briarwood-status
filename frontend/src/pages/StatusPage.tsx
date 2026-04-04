@@ -81,7 +81,7 @@ function MonitorCard({ m, light }: { m: StatusMonitor; light: boolean }) {
           <span>{timeAgo(m.lastCheckedAt)}</span>
         </div>
       </div>
-      <UptimeBar dailyUptime={m.dailyUptime} />
+      <UptimeBar dailyUptime={m.dailyUptime} light={light} />
       {m.lastChecks && Object.keys(m.lastChecks).length > 0 && (
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
           {Object.entries(m.lastChecks).map(([name, check]) => (
@@ -169,10 +169,11 @@ export default function StatusPage() {
   const oc = overallConfig[filteredOverall]
 
   // Block rendering until data loaded to prevent theme flash
+  // Use a neutral mid-tone that doesn't jar against either theme
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 font-sans flex items-center justify-center">
-        <div className="text-zinc-600">
+      <div className="min-h-screen bg-neutral-800 font-sans flex items-center justify-center">
+        <div className="text-neutral-500">
           <i className="fa-solid fa-spinner fa-spin mr-2" />
           Loading...
         </div>
@@ -181,7 +182,7 @@ export default function StatusPage() {
   }
 
   return (
-    <div className={`min-h-screen font-sans ${light ? 'bg-gray-50 text-gray-900' : 'bg-zinc-950 text-zinc-100'}`}>
+    <div className={`min-h-screen flex flex-col font-sans ${light ? 'bg-gray-50 text-gray-900' : 'bg-zinc-950 text-zinc-100'}`}>
       {/* Header — always white text, brand color bg */}
       <header
         className={`border-b ${light ? 'border-gray-200' : 'border-zinc-800'}`}
@@ -208,7 +209,7 @@ export default function StatusPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-5 py-6">
+      <main className="mx-auto max-w-4xl px-5 py-6 flex-1 w-full">
 
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -238,19 +239,21 @@ export default function StatusPage() {
               <MonitorGroups monitors={filteredMonitors} light={light} />
             )}
 
-            {/* Timestamp */}
-            <p className={`mt-5 text-center text-xs ${light ? 'text-gray-400' : 'text-zinc-600'}`}>
-              Last updated:{' '}
-              {new Date(status.lastUpdated).toLocaleString()}
-            </p>
           </>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className={`border-t py-3 text-center text-xs ${light ? 'border-gray-200 text-gray-400' : 'border-zinc-800 text-zinc-600'}`}>
-        Powered by{' '}
-        <a href="https://briarwoodsoftware.com" target="_blank" rel="noreferrer" className={`font-medium ${light ? 'text-gray-500 hover:text-gray-700' : 'text-zinc-400 hover:text-zinc-200'}`}>Briarwood Software</a>
+      {/* Footer — always pinned to bottom */}
+      <footer className={`border-t py-3 text-center text-xs ${light ? 'border-gray-200 text-gray-300' : 'border-zinc-800 text-zinc-600'}`}>
+        {status && (
+          <p className="mb-1">
+            Last updated: {new Date(status.lastUpdated).toLocaleString()}
+          </p>
+        )}
+        <p>
+          Powered by{' '}
+          <a href="https://briarwoodsoftware.com" target="_blank" rel="noreferrer" className={`font-medium ${light ? 'text-gray-400 hover:text-gray-600' : 'text-zinc-400 hover:text-zinc-200'}`}>Briarwood Software</a>
+        </p>
       </footer>
     </div>
   )

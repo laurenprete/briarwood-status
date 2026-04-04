@@ -30,8 +30,8 @@ function uptimeColor(uptime: number | null): string {
   return 'text-red-400'
 }
 
-function barColor(uptime: number | null): string {
-  if (uptime === null) return 'bg-zinc-700'
+function barColor(uptime: number | null, light: boolean): string {
+  if (uptime === null) return light ? 'bg-gray-200' : 'bg-zinc-700'
   if (uptime >= 100) return 'bg-green-500'
   if (uptime >= 97) return 'bg-amber-500'
   return 'bg-red-500'
@@ -39,8 +39,10 @@ function barColor(uptime: number | null): string {
 
 export default function UptimeBar({
   dailyUptime,
+  light = false,
 }: {
   dailyUptime: DayUptime[]
+  light?: boolean
 }) {
   const [hovered, setHovered] = useState<number | null>(null)
   const [tooltipPos, setTooltipPos] = useState<'left' | 'center' | 'right'>('center')
@@ -77,7 +79,7 @@ export default function UptimeBar({
         {padded.map((d, i) => (
           <div
             key={i}
-            className={`h-6 flex-1 rounded-[2px] ${barColor(d.uptime)} transition-colors ${
+            className={`h-6 flex-1 rounded-[2px] ${barColor(d.uptime, light)} transition-colors ${
               hovered === i ? 'ring-1 ring-white/40' : ''
             }`}
             onMouseEnter={(e) => handleMouseEnter(i, e)}
@@ -88,7 +90,7 @@ export default function UptimeBar({
 
       {day && hovered !== null && (
         <div
-          className={`absolute z-20 mt-2 w-52 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 shadow-xl pointer-events-none ${
+          className={`absolute z-20 mt-2 w-52 rounded-lg border px-3 py-2.5 shadow-xl pointer-events-none ${light ? 'border-gray-200 bg-white' : 'border-zinc-700 bg-zinc-800'} ${
             tooltipPos === 'left'
               ? 'left-0'
               : tooltipPos === 'right'
@@ -96,7 +98,7 @@ export default function UptimeBar({
                 : 'left-1/2 -translate-x-1/2'
           }`}
         >
-          <div className="text-xs font-medium text-zinc-200">
+          <div className={`text-xs font-medium ${light ? 'text-gray-800' : 'text-zinc-200'}`}>
             {day.date ? formatDate(day.date) : 'No data'}
           </div>
 
