@@ -40,6 +40,13 @@ export class BriarwoodStatusStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    const groupsTable = new dynamodb.Table(this, 'GroupsTable', {
+      tableName: 'briarwood-status-groups',
+      partitionKey: { name: 'slug', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     // ─── Secrets (Secrets Manager) ──────────────────────────────────────
 
     const smtp2goSecret = secretsmanager.Secret.fromSecretNameV2(
@@ -53,6 +60,23 @@ export class BriarwoodStatusStack extends cdk.Stack {
       'HealthCheckToken',
       'briarwood/health-check-token',
     );
+
+    const logoBucket = new cdk.aws_s3.Bucket(this, 'LogoBucket', {
+      bucketName: 'briarwood-status-logos',
+      publicReadAccess: true,
+      blockPublicAccess: new cdk.aws_s3.BlockPublicAccess({
+        blockPublicAcls: false,
+        ignorePublicAcls: false,
+        blockPublicPolicy: false,
+        restrictPublicBuckets: false,
+      }),
+      cors: [{
+        allowedMethods: [cdk.aws_s3.HttpMethods.PUT],
+        allowedOrigins: ['https://status.briarwoodsoftware.com'],
+        allowedHeaders: ['*'],
+      }],
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
 
     // ─── Lambda Functions ──────────────────────────────────────────────
 
@@ -87,6 +111,8 @@ export class BriarwoodStatusStack extends cdk.Stack {
         COGNITO_CLIENT_ID: '40bcm1gp95r5sr3aes9qa3c4q4',
         COGNITO_REGION: 'us-east-1',
         HEALTH_CHECK_TOKEN: healthCheckToken.secretValue.unsafeUnwrap(),
+        GROUPS_TABLE: groupsTable.tableName,
+        LOGO_BUCKET: logoBucket.bucketName,
       },
     });
 
@@ -98,6 +124,8 @@ export class BriarwoodStatusStack extends cdk.Stack {
     monitorsTable.grantReadWriteData(apiFn);
     checkResultsTable.grantReadWriteData(apiFn);
     monitorStateTable.grantReadWriteData(apiFn);
+    groupsTable.grantReadWriteData(apiFn);
+    logoBucket.grantReadWrite(apiFn);
 
     // ─── EventBridge Schedule ──────────────────────────────────────────
 
@@ -244,6 +272,14 @@ export class BriarwoodStatusStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'MonitorStateTableName', {
       value: monitorStateTable.tableName,
+    });
+
+    new cdk.CfnOutput(this, 'GroupsTableName', {
+      value: groupsTable.tableName,
+    });
+
+    new cdk.CfnOutput(this, 'LogoBucketName', {
+      value: logoBucket.bucketName,
     });
   }
 }
