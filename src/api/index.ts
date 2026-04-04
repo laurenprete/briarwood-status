@@ -54,10 +54,20 @@ const RANGE_MS: Record<string, number> = {
   '30d': 30 * 24 * 60 * 60 * 1000,
 }
 
+const DEGRADED_UPTIME_WEIGHT = 0.5
+
 function calculateUptime(checks: CheckResult[]): number | null {
   if (checks.length === 0) return null
-  const upCount = checks.filter((c) => c.isUp).length
-  return Math.round((upCount / checks.length) * 100 * 100) / 100
+  let score = 0
+  for (const c of checks) {
+    if (c.healthStatus === 'degraded') {
+      score += DEGRADED_UPTIME_WEIGHT
+    } else if (c.isUp) {
+      score += 1
+    }
+    // unhealthy / down / error = 0
+  }
+  return Math.round((score / checks.length) * 100 * 100) / 100
 }
 
 function parseRange(raw: string | undefined): string {
