@@ -142,6 +142,7 @@ function computeDailyUptime(
 
 let statusCache: { key: string; data: StatusSummary; expiresAt: number } | null = null
 const STATUS_CACHE_TTL_MS = 30_000
+let isFirstInvocation = true
 
 // --- Routes ---
 
@@ -748,16 +749,22 @@ app.get('/health', async (c) => {
   type CheckStatus = 'healthy' | 'degraded' | 'unhealthy'
   const checks: Record<string, { status: CheckStatus; reason: string; latencyMs?: number; error?: string }> = {}
 
-  // Check DynamoDB — try to read from monitors table
+  // Check DynamoDB — lightweight GetItem (non-existent key is fine, proves connectivity)
+  // On cold start, SDK init inflates latency — don't penalize for that
   {
+    const coldStart = isFirstInvocation
     const start = Date.now()
     try {
-      await listMonitors()
+      await getMonitor('__health_check__')
       const latencyMs = Date.now() - start
-      const status: CheckStatus = latencyMs < 500 ? 'healthy' : latencyMs < 2000 ? 'degraded' : 'unhealthy'
+      const status: CheckStatus = coldStart
+        ? 'healthy'
+        : latencyMs < 500 ? 'healthy' : latencyMs < 2000 ? 'degraded' : 'unhealthy'
       checks.dynamodb = {
         status,
-        reason: status === 'healthy' ? 'Responding normally' : status === 'degraded' ? 'High latency' : 'Unreachable',
+        reason: coldStart
+          ? `Responding normally (cold start: ${latencyMs}ms)`
+          : status === 'healthy' ? 'Responding normally' : status === 'degraded' ? 'High latency' : 'Unreachable',
         latencyMs,
       }
     } catch (err) {
@@ -769,6 +776,8 @@ app.get('/health', async (c) => {
       }
     }
   }
+
+  isFirstInvocation = false
 
   // Check Cognito — fetch JWKS endpoint
   {
