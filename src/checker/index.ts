@@ -113,7 +113,7 @@ async function processMonitor(monitor: Monitor): Promise<void> {
     }
 
     console.log(
-      `[checker] ${monitor.name}: isUp=${checkResult.isUp} status=${checkResult.statusCode ?? 'null'} rt=${checkResult.responseTime}ms`,
+      `[checker] ${monitor.name}: isUp=${checkResult.isUp}${checkResult.healthStatus ? ` health=${checkResult.healthStatus}` : ''} status=${checkResult.statusCode ?? 'null'} rt=${checkResult.responseTime}ms`,
     )
   } catch (error) {
     console.error(
@@ -199,12 +199,15 @@ function computeNextState(
   checkResult: CheckResult,
 ): { nextState: MonitorState; alertPayload: AlertPayload | null } {
   const now = checkResult.timestamp
+  const isDegraded = checkResult.healthStatus === 'degraded'
 
-  // First-ever check – seed state, no alert
+  // First-ever check — seed state, no alert
   if (!currentState) {
     const firstState: MonitorState = {
       monitorId: monitor.id,
-      currentStatus: checkResult.isUp ? 'up' : 'unknown',
+      currentStatus: checkResult.isUp
+        ? (isDegraded ? 'degraded' : 'up')
+        : 'unknown',
       lastCheckedAt: now,
       lastStatusChange: now,
       consecutiveFailures: checkResult.isUp ? 0 : 1,
@@ -212,27 +215,36 @@ function computeNextState(
       lastResponseTime: checkResult.responseTime,
       lastStatusCode: checkResult.statusCode,
       lastError: checkResult.error ?? null,
+      ...(checkResult.checks && { lastChecks: checkResult.checks }),
     }
     return { nextState: firstState, alertPayload: null }
   }
 
-  // Base next state – always update the "last" fields
+  // Base next state — always update the "last" fields
   let nextState: MonitorState = {
     ...currentState,
     lastCheckedAt: now,
     lastResponseTime: checkResult.responseTime,
     lastStatusCode: checkResult.statusCode,
     lastError: checkResult.error ?? null,
+    ...(checkResult.checks !== undefined
+      ? { lastChecks: checkResult.checks }
+      : currentState.lastChecks !== undefined
+        ? { lastChecks: currentState.lastChecks }
+        : {}),
   }
 
   let alertPayload: AlertPayload | null = null
 
   if (checkResult.isUp) {
+    // Successful check (healthy or degraded) — reset failure counter
+    const newStatus: 'up' | 'degraded' = isDegraded ? 'degraded' : 'up'
+
     if (currentState.currentStatus === 'down') {
-      // ---- Recovery ----
+      // ---- Recovery (from down → up or down → degraded) ----
       nextState = {
         ...nextState,
-        currentStatus: 'up',
+        currentStatus: newStatus,
         lastStatusChange: now,
         consecutiveFailures: 0,
         downSince: null,
@@ -245,19 +257,22 @@ function computeNextState(
         downtimeDuration: formatDowntime(currentState.downSince, now),
       }
     } else {
-      // ---- Still up (or recovered from unknown before threshold) ----
+      // ---- Still up / degraded (or recovered from unknown) ----
       nextState = {
         ...nextState,
-        currentStatus: 'up',
+        currentStatus: newStatus,
         consecutiveFailures: 0,
+        // Only update lastStatusChange if status actually changed
+        ...(currentState.currentStatus !== newStatus && { lastStatusChange: now }),
       }
     }
   } else {
-    // Check failed
+    // Check failed (unhealthy / network error)
     const failures = currentState.consecutiveFailures + 1
 
     if (
       (currentState.currentStatus === 'up' ||
+        currentState.currentStatus === 'degraded' ||
         currentState.currentStatus === 'unknown') &&
       failures >= 2
     ) {
