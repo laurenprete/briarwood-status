@@ -8,11 +8,11 @@
     "deploy": "cdk deploy --profile cdk-admin --require-approval never"
   },
   "devDependencies": {
-    "typescript": "^5.5.0",
-    "aws-cdk": "^2.150.0"
+    "typescript": "5.9.3",
+    "aws-cdk": "2.1114.1"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.150.0",
-    "constructs": "^10.0.0"
+    "aws-cdk-lib": "2.245.0",
+    "constructs": "10.6.0"
   }
 }
