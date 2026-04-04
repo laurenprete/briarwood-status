@@ -21,11 +21,13 @@ export interface CheckResult {
   isUp: boolean
   error?: string
   ttl: number
+  healthStatus?: 'healthy' | 'degraded' | 'unhealthy'
+  checks?: Record<string, { status: string; latencyMs?: number; error?: string }>
 }
 
 export interface MonitorState {
   monitorId: string
-  currentStatus: 'up' | 'down' | 'unknown'
+  currentStatus: 'up' | 'degraded' | 'down' | 'unknown'
   lastCheckedAt: string | null
   lastStatusChange: string | null
   consecutiveFailures: number
@@ -33,6 +35,7 @@ export interface MonitorState {
   lastResponseTime: number | null
   lastStatusCode: number | null
   lastError: string | null
+  lastChecks?: Record<string, { status: string; latencyMs?: number; error?: string }>
 }
 
 export interface StatusSummary {
@@ -41,9 +44,11 @@ export interface StatusSummary {
     name: string
     url: string
     group?: string
-    currentStatus: 'up' | 'down' | 'unknown'
+    healthCheckEnabled: boolean
+    currentStatus: 'up' | 'degraded' | 'down' | 'unknown'
     lastCheckedAt: string | null
     lastResponseTime: number | null
+    lastChecks?: Record<string, { status: string; latencyMs?: number; error?: string }>
     uptime24h: number | null
     uptime7d: number | null
     uptime30d: number | null
