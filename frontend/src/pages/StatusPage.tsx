@@ -168,9 +168,21 @@ export default function StatusPage() {
 
   const oc = overallConfig[filteredOverall]
 
+  // Block rendering until data loaded to prevent theme flash
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 font-sans flex items-center justify-center">
+        <div className="text-zinc-600">
+          <i className="fa-solid fa-spinner fa-spin mr-2" />
+          Loading...
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`min-h-screen font-sans ${light ? 'bg-gray-50 text-gray-900' : 'bg-zinc-950 text-zinc-100'}`}>
-      {/* Header */}
+      {/* Header — always white text, brand color bg */}
       <header
         className={`border-b ${light ? 'border-gray-200' : 'border-zinc-800'}`}
         style={{ backgroundColor: branding?.brand?.primary ?? (light ? '#ffffff' : '#18181b') }}
@@ -197,12 +209,6 @@ export default function StatusPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-5 py-6">
-        {loading && (
-          <div className={`py-20 text-center ${light ? 'text-gray-400' : 'text-zinc-500'}`}>
-            <i className="fa-solid fa-spinner fa-spin mr-2" />
-            Loading status...
-          </div>
-        )}
 
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
