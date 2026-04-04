@@ -526,7 +526,7 @@ app.get('/health', async (c) => {
       await listMonitors()
       const latencyMs = Date.now() - start
       checks.dynamodb = {
-        status: latencyMs < 100 ? 'healthy' : latencyMs < 500 ? 'degraded' : 'unhealthy',
+        status: latencyMs < 500 ? 'healthy' : latencyMs < 2000 ? 'degraded' : 'unhealthy',
         latencyMs,
       }
     } catch (err) {
