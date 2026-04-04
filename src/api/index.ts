@@ -84,9 +84,9 @@ function computeDailyUptime(
   checks: CheckResult[],
   days: number,
   nowMs: number
-): Array<{ date: string; uptime: number | null; affectedSubsystems?: string[] }> {
+): Array<{ date: string; uptime: number | null; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }> {
   // Build day buckets (midnight UTC boundaries)
-  const result: Array<{ date: string; uptime: number | null; affectedSubsystems?: string[] }> = []
+  const result: Array<{ date: string; uptime: number | null; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }> = []
   const msPerDay = 24 * 60 * 60 * 1000
 
   for (let i = days - 1; i >= 0; i--) {
@@ -99,22 +99,30 @@ function computeDailyUptime(
       return t >= dayStart.getTime() && t < dayEnd.getTime()
     })
 
-    // Collect subsystems that were degraded or unhealthy on this day
-    const affected = new Set<string>()
+    // Collect subsystems that were degraded or unhealthy on this day, with reasons
+    const affected: Record<string, string> = {}
     for (const c of dayChecks) {
       if (c.checks) {
         for (const [name, check] of Object.entries(c.checks)) {
-          if ((check as any).status !== 'healthy') {
-            affected.add(name)
+          const ch = check as any
+          if (ch.status !== 'healthy') {
+            // Keep the worst reason (unhealthy > degraded)
+            if (!affected[name] || ch.status === 'unhealthy') {
+              affected[name] = ch.reason || ch.status
+            }
           }
         }
       }
     }
 
+    const affectedNames = Object.keys(affected)
     result.push({
       date: dayStart.toISOString().slice(0, 10),
       uptime: calculateUptime(dayChecks),
-      ...(affected.size > 0 && { affectedSubsystems: [...affected] }),
+      ...(affectedNames.length > 0 && {
+        affectedSubsystems: affectedNames,
+        affectedReasons: affected,
+      }),
     })
   }
 

@@ -9,7 +9,7 @@
 
 import { useState, useRef } from 'react'
 
-type DayUptime = { date: string; uptime: number | null; affectedSubsystems?: string[] }
+type DayUptime = { date: string; uptime: number | null; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }
 
 function formatDate(iso: string): string {
   if (!iso) return ''
@@ -111,12 +111,15 @@ export default function UptimeBar({
           )}
 
           {day.affectedSubsystems && day.affectedSubsystems.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 border-t border-zinc-700/50 pt-1.5">
+            <div className="mt-1.5 space-y-0.5 border-t border-zinc-700/50 pt-1.5">
               {day.affectedSubsystems.map((name) => (
-                <span key={name} className="inline-flex items-center gap-1 text-xs text-amber-400/80">
-                  <span className="h-1 w-1 rounded-full bg-amber-500" />
-                  {name}
-                </span>
+                <div key={name} className="flex items-center gap-1.5 text-xs">
+                  <span className="h-1 w-1 rounded-full bg-amber-500 shrink-0" />
+                  <span className="text-zinc-400">{name}</span>
+                  {day.affectedReasons?.[name] && (
+                    <span className="text-amber-400/70">— {day.affectedReasons[name].toLowerCase()}</span>
+                  )}
+                </div>
               ))}
             </div>
           )}
