@@ -4,6 +4,7 @@ import StatusPage from './pages/StatusPage'
 import Dashboard from './pages/Dashboard'
 import MonitorDetail from './pages/MonitorDetail'
 import AdminPage from './pages/AdminPage'
+import GroupsPage from './pages/GroupsPage'
 import LoginPage from './pages/LoginPage'
 import { isLoggedIn } from './auth'
 
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/monitors/:id" element={<MonitorDetail />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/groups" element={<GroupsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

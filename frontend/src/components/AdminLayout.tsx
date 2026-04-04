@@ -35,6 +35,18 @@ export default function AdminLayout() {
             >
               Admin
             </NavLink>
+            <NavLink
+              to="/groups"
+              className={({ isActive }) =>
+                `rounded px-3 py-1.5 text-sm transition ${
+                  isActive
+                    ? 'bg-zinc-800 text-teal-400'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`
+              }
+            >
+              Groups
+            </NavLink>
           </div>
           <div className="ml-auto flex items-center gap-4">
             <NavLink
