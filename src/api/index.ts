@@ -2,7 +2,9 @@ import { Hono } from 'hono'
 import { handle } from 'hono/aws-lambda'
 import { cors } from 'hono/cors'
 import { randomUUID } from 'crypto'
-import type { Monitor, MonitorState, StatusSummary, CheckResult } from '../shared/types'
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import type { Monitor, MonitorState, StatusSummary, CheckResult, Group } from '../shared/types'
 import {
   listMonitors,
   getMonitor,
@@ -13,9 +15,13 @@ import {
   getAllMonitorStates,
   writeCheckResult,
   putMonitorState,
+  listGroups,
+  getGroup,
+  putGroup,
+  deleteGroup as deleteGroupRecord,
 } from '../shared/db'
 import { authMiddleware } from '../shared/auth'
-import { createMonitorSchema, updateMonitorSchema, firstZodError } from '../shared/validation'
+import { createMonitorSchema, updateMonitorSchema, firstZodError, createGroupSchema, updateGroupSchema, slugify } from '../shared/validation'
 import { validateMonitorUrl } from '../shared/url-validator'
 
 const ALLOWED_ORIGINS = [
@@ -30,6 +36,9 @@ const ALLOWED_ORIGINS = [
 const AMPLIFY_ORIGIN_PATTERN = /^https:\/\/main\.[a-z0-9]+\.amplifyapp\.com$/
 
 const app = new Hono().basePath('/api')
+
+const s3 = new S3Client({})
+const LOGO_BUCKET = process.env.LOGO_BUCKET!
 
 app.use(
   '*',
@@ -176,7 +185,10 @@ app.post('/monitors', authMiddleware, async (c) => {
       id: randomUUID(),
       name: body.name,
       url: body.url,
-      group: body.group,
+      groupSlug: body.groupSlug,
+      ...(body.groupSlug && {
+        groupName: (await getGroup(body.groupSlug))?.name,
+      }),
       expectedStatus: body.expectedStatus,
       isActive: body.isActive,
       alertEmails: body.alertEmails,
@@ -298,7 +310,10 @@ app.put('/monitors/:id', authMiddleware, async (c) => {
       }),
       ...(body.alertEmails !== undefined && { alertEmails: body.alertEmails }),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
-      ...(body.group !== undefined && { group: body.group || undefined }),
+      ...(body.groupSlug !== undefined && {
+        groupSlug: body.groupSlug || undefined,
+        groupName: body.groupSlug ? (await getGroup(body.groupSlug))?.name : undefined,
+      }),
       ...(body.healthCheckEnabled !== undefined && { healthCheckEnabled: body.healthCheckEnabled }),
       ...(body.healthCheckPath !== undefined && { healthCheckPath: body.healthCheckPath }),
       ...(body.isPublic !== undefined && { isPublic: body.isPublic }),
@@ -409,6 +424,180 @@ app.get('/monitors/:id/checks', async (c) => {
   }
 })
 
+// --- Group routes ---
+
+// List all groups (auth required)
+app.get('/groups', authMiddleware, async (c) => {
+  try {
+    const groups = await listGroups()
+    groups.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+    return c.json(groups)
+  } catch (err) {
+    console.error('[api] GET /groups failed', err)
+    return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
+// Create a group (auth required)
+app.post('/groups', authMiddleware, async (c) => {
+  try {
+    const rawBody = await c.req.json().catch(() => null)
+    if (!rawBody || typeof rawBody !== 'object') {
+      return c.json({ error: 'Invalid request body' }, 400)
+    }
+
+    const parsed = createGroupSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return c.json({ error: firstZodError(parsed.error) }, 400)
+    }
+
+    const body = parsed.data
+    const slug = body.slug ?? slugify(body.name)
+
+    // Check for slug conflict
+    const existing = await getGroup(slug)
+    if (existing) {
+      return c.json({ error: `A group with slug "${slug}" already exists` }, 409)
+    }
+
+    const now = new Date().toISOString()
+    const group: Group = {
+      slug,
+      name: body.name,
+      isActive: body.isActive,
+      ...(body.brand && { brand: body.brand }),
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    await putGroup(group)
+    return c.json(group, 201)
+  } catch (err) {
+    console.error('[api] POST /groups failed', err)
+    return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
+// Update a group (auth required)
+app.put('/groups/:slug', authMiddleware, async (c) => {
+  try {
+    const slug = c.req.param('slug')
+    const existing = await getGroup(slug)
+    if (!existing) {
+      return c.json({ error: 'Group not found' }, 404)
+    }
+
+    const rawBody = await c.req.json().catch(() => null)
+    if (!rawBody || typeof rawBody !== 'object') {
+      return c.json({ error: 'Invalid request body' }, 400)
+    }
+
+    const parsed = updateGroupSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return c.json({ error: firstZodError(parsed.error) }, 400)
+    }
+
+    const body = parsed.data
+
+    const updated: Group = {
+      ...existing,
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.isActive !== undefined && { isActive: body.isActive }),
+      // null means "clear this field"; undefined means "leave unchanged"
+      ...(body.brand !== undefined && { brand: body.brand ?? undefined }),
+      ...(body.logoUrl !== undefined && { logoUrl: body.logoUrl ?? undefined }),
+      ...(body.logoKey !== undefined && { logoKey: body.logoKey ?? undefined }),
+      slug: existing.slug,
+      createdAt: existing.createdAt,
+      updatedAt: new Date().toISOString(),
+    }
+
+    await putGroup(updated)
+    return c.json(updated)
+  } catch (err) {
+    console.error('[api] PUT /groups/:slug failed', err)
+    return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
+// Delete a group (auth required)
+app.delete('/groups/:slug', authMiddleware, async (c) => {
+  try {
+    const slug = c.req.param('slug')
+    const existing = await getGroup(slug)
+    if (!existing) {
+      return c.json({ error: 'Group not found' }, 404)
+    }
+
+    // Check if any monitors reference this group
+    const allMonitors = await listMonitors()
+    const referencing = allMonitors.filter((m) => m.groupSlug === slug)
+    if (referencing.length > 0) {
+      return c.json(
+        { error: `Cannot delete group: ${referencing.length} monitor(s) still reference it` },
+        400
+      )
+    }
+
+    // Best-effort: delete S3 logo object if present
+    if (existing.logoKey) {
+      try {
+        await s3.send(
+          new DeleteObjectCommand({ Bucket: LOGO_BUCKET, Key: existing.logoKey })
+        )
+      } catch (err) {
+        console.warn('[api] DELETE /groups/:slug — S3 logo delete failed (best-effort)', err)
+      }
+    }
+
+    await deleteGroupRecord(slug)
+    statusCache = null
+
+    return c.json({ success: true })
+  } catch (err) {
+    console.error('[api] DELETE /groups/:slug failed', err)
+    return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
+// Get a presigned PUT URL for logo upload (auth required)
+app.post('/groups/:slug/logo-upload', authMiddleware, async (c) => {
+  try {
+    const slug = c.req.param('slug')
+    const existing = await getGroup(slug)
+    if (!existing) {
+      return c.json({ error: 'Group not found' }, 404)
+    }
+
+    const rawBody = await c.req.json().catch(() => null)
+    const contentType: string = (rawBody && rawBody.contentType) || 'image/png'
+
+    const extMap: Record<string, string> = {
+      'image/svg+xml': 'svg',
+      'image/webp': 'webp',
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/png': 'png',
+    }
+    const ext = extMap[contentType] ?? 'png'
+    const key = `groups/${slug}/logo.${ext}`
+
+    const command = new PutObjectCommand({
+      Bucket: LOGO_BUCKET,
+      Key: key,
+      ContentType: contentType,
+    })
+
+    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 })
+    const publicUrl = `https://${LOGO_BUCKET}.s3.amazonaws.com/${key}`
+
+    return c.json({ uploadUrl, publicUrl, key })
+  } catch (err) {
+    console.error('[api] POST /groups/:slug/logo-upload failed', err)
+    return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
 // Status summary — returns public monitors only unless authenticated
 app.get('/status', async (c) => {
   try {
@@ -433,10 +622,25 @@ app.get('/status', async (c) => {
       }
     }
 
-    // Use separate caches for public vs authenticated views
-    const cacheKey = isAuthenticated ? 'auth' : 'public'
+    // Use separate caches for public vs authenticated views, keyed by group slug too
+    const groupSlugParam = c.req.query('group')
+    const cacheKey = `${isAuthenticated ? 'auth' : 'public'}:${groupSlugParam || 'all'}`
     if (statusCache?.key === cacheKey && Date.now() < statusCache.expiresAt) {
       return c.json(statusCache.data)
+    }
+
+    // Resolve branding if a group slug was provided
+    let branding: StatusSummary['branding'] = undefined
+    if (groupSlugParam) {
+      const group = await getGroup(groupSlugParam)
+      if (group && group.isActive) {
+        branding = {
+          name: group.name,
+          slug: group.slug,
+          ...(group.logoUrl && { logoUrl: group.logoUrl }),
+          ...(group.brand && { brand: group.brand }),
+        }
+      }
     }
 
     const [activeMonitors, states] = await Promise.all([
@@ -478,7 +682,8 @@ app.get('/status', async (c) => {
           id: monitor.id,
           name: monitor.name,
           url: monitor.url,
-          group: monitor.group,
+          groupSlug: monitor.groupSlug,
+          groupName: monitor.groupName,
           healthCheckEnabled: monitor.healthCheckEnabled,
           currentStatus: state?.currentStatus ?? ('unknown' as const),
           lastCheckedAt: state?.lastCheckedAt ?? null,
@@ -510,6 +715,7 @@ app.get('/status', async (c) => {
     }
 
     const summary: StatusSummary = {
+      ...(branding && { branding }),
       monitors,
       overall,
       lastUpdated: new Date().toISOString(),
