@@ -56,7 +56,7 @@ const overallConfig = {
   },
 }
 
-function MonitorCard({ m }: { m: StatusMonitor }) {
+function MonitorCard({ m, light }: { m: StatusMonitor; light: boolean }) {
   return (
     <div className={`rounded-lg border p-4 ${light ? 'border-gray-200 bg-white' : 'border-zinc-800 bg-zinc-900'}`}>
       <div className="mb-2 flex items-center justify-between">
@@ -109,7 +109,7 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
   )
 }
 
-function MonitorGroups({ monitors }: { monitors: StatusMonitor[] }) {
+function MonitorGroups({ monitors, light }: { monitors: StatusMonitor[]; light: boolean }) {
   const groups = useMemo(() => groupMonitors(monitors), [monitors])
   const showHeaders = groups.length > 1
 
@@ -124,7 +124,7 @@ function MonitorGroups({ monitors }: { monitors: StatusMonitor[] }) {
           )}
           <div className="space-y-2">
             {g.monitors.map((m) => (
-              <MonitorCard key={m.id} m={m} />
+              <MonitorCard key={m.id} m={m} light={light} />
             ))}
           </div>
         </div>
@@ -235,7 +235,7 @@ export default function StatusPage() {
                 {groupFilter ? 'No monitors found for this group.' : 'No monitors configured yet.'}
               </div>
             ) : (
-              <MonitorGroups monitors={filteredMonitors} />
+              <MonitorGroups monitors={filteredMonitors} light={light} />
             )}
 
             {/* Timestamp */}
