@@ -248,7 +248,27 @@ export default function MonitorDetail() {
                               {c.statusCode ?? '—'}
                             </td>
                             <td className="px-4 py-2 text-zinc-400">
-                              {c.responseTime}ms
+                              <span className="group/rt relative cursor-default">
+                                {c.responseTime}ms
+                                {c.checks && Object.keys(c.checks).length > 0 && (
+                                  <span className="absolute left-0 top-full z-20 mt-1 hidden w-44 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 shadow-xl group-hover/rt:block">
+                                    {Object.entries(c.checks).map(([name, check]) => (
+                                      <span key={name} className="flex items-center justify-between gap-2 text-xs">
+                                        <span className="text-zinc-400">{name}</span>
+                                        <span className={
+                                          check.status === 'healthy'
+                                            ? 'text-zinc-300'
+                                            : check.status === 'degraded'
+                                              ? 'text-amber-400'
+                                              : 'text-red-400'
+                                        }>
+                                          {check.latencyMs !== undefined ? `${check.latencyMs}ms` : '—'}
+                                        </span>
+                                      </span>
+                                    ))}
+                                  </span>
+                                )}
+                              </span>
                             </td>
                             <td className="px-4 py-2 text-zinc-600">
                               {c.error
