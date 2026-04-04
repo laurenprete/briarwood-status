@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getStatus } from '../api'
 import type { StatusSummary, StatusMonitor } from '../types'
@@ -17,12 +17,12 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-function groupMonitors<T extends { group?: string }>(
+function groupMonitors<T extends { groupName?: string }>(
   monitors: T[],
 ): { name: string; monitors: T[] }[] {
   const groups = new Map<string, T[]>()
   for (const m of monitors) {
-    const key = m.group?.trim() || 'Other'
+    const key = m.groupName?.trim() || 'Other'
     const arr = groups.get(key) || []
     arr.push(m)
     groups.set(key, arr)
@@ -141,18 +141,20 @@ export default function StatusPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
+  const branding = status?.branding
+
   useEffect(() => {
-    getStatus()
+    getStatus(groupFilter || undefined)
       .then(setStatus)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [groupFilter])
 
   const filteredMonitors = useMemo(() => {
     if (!status) return []
     if (!groupFilter) return status.monitors
     return status.monitors.filter(
-      (m) => m.group?.toLowerCase() === groupFilter.toLowerCase(),
+      (m) => m.groupSlug === groupFilter,
     )
   }, [status, groupFilter])
 
@@ -166,18 +168,30 @@ export default function StatusPage() {
   const oc = overallConfig[filteredOverall]
 
   return (
-    <div className="min-h-screen bg-zinc-950 font-sans">
+    <div
+      className="min-h-screen bg-zinc-950 font-sans"
+      style={{
+        '--brand-primary': branding?.brand?.primary ?? '#14b8a6',
+        '--brand-accent': branding?.brand?.accent ?? branding?.brand?.primary ?? '#2dd4bf',
+      } as React.CSSProperties}
+    >
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50">
+      <header className="border-b bg-zinc-900/50" style={{ borderColor: `${branding?.brand?.primary ?? '#27272a'}40` }}>
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">
-            <i className="fa-solid fa-shield-halved text-lg text-teal-400" />
+            {branding?.logoUrl ? (
+              <img src={branding.logoUrl} alt="" className="h-7 w-7 object-contain" />
+            ) : (
+              <i className="fa-solid fa-shield-halved text-lg" style={{ color: 'var(--brand-primary)' }} />
+            )}
             <span className="text-sm font-semibold tracking-tight text-zinc-100">
-              {groupFilter ? `${groupFilter} System Status` : 'Briarwood Software System Status'}
+              {branding?.name
+                ? `${branding.name} System Status`
+                : 'Briarwood Software System Status'}
             </span>
           </div>
           {isLoggedIn() && (
-            <a href="/dashboard" className="text-xs text-zinc-500 hover:text-teal-400">
+            <a href="/dashboard" className="text-xs text-zinc-500 hover:text-zinc-300">
               <i className="fa-solid fa-gear" /> Admin
             </a>
           )}
