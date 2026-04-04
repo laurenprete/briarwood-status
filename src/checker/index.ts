@@ -404,7 +404,12 @@ function normalizeError(err: unknown): string {
   if (err instanceof DOMException && err.name === 'AbortError') {
     return 'Request timed out after 10s'
   }
-  if (err instanceof Error) return err.message
+  if (err instanceof Error) {
+    // Node fetch wraps the real error in .cause
+    const cause = (err as any).cause
+    if (cause instanceof Error) return `${err.message}: ${cause.message}`
+    return err.message
+  }
   return 'Unknown network error'
 }
 
