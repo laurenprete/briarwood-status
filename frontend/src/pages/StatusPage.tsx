@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { getStatus } from '../api'
 import type { StatusSummary, StatusMonitor } from '../types'
 import UptimeBar from '../components/UptimeBar'
@@ -134,8 +134,8 @@ function MonitorGroups({ monitors }: { monitors: StatusMonitor[] }) {
 }
 
 export default function StatusPage() {
-  const [searchParams] = useSearchParams()
-  const groupFilter = searchParams.get('group')
+  const { groupSlug } = useParams<{ groupSlug: string }>()
+  const groupFilter = groupSlug || null
 
   const [status, setStatus] = useState<StatusSummary | null>(null)
   const [error, setError] = useState('')

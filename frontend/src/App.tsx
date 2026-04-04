@@ -21,6 +21,7 @@ export default function App() {
       <Routes>
         {/* Public status page — standalone layout */}
         <Route path="/" element={<StatusPage />} />
+        <Route path="/:groupSlug" element={<StatusPage />} />
 
         {/* Login page */}
         <Route path="/login" element={<LoginPage />} />

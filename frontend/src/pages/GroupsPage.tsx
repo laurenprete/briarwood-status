@@ -183,7 +183,7 @@ export default function GroupsPage() {
                 ) : (
                   <>
                     <a
-                      href={`/?group=${g.slug}`}
+                      href={`/${g.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="rounded px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition"
