@@ -69,7 +69,7 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
                   : 'bg-zinc-500'
             }`}
           />
-          <a href={m.url} target="_blank" rel="noreferrer" className="text-sm font-medium text-zinc-100 hover:text-teal-400">{m.name}</a>
+          <span className="text-sm font-medium text-zinc-100">{m.name}</span>
         </div>
         <div className="flex items-center gap-4 text-xs text-zinc-500">
           <span>

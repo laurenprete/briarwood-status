@@ -41,8 +41,18 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
       className="group rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 transition hover:border-zinc-700 hover:bg-zinc-900"
     >
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="font-medium text-zinc-200 group-hover:text-teal-400 transition">
+        <h3 className="font-medium text-zinc-200 group-hover:text-teal-400 transition inline-flex items-center gap-2">
           {m.name}
+          <a
+            href={m.url}
+            target="_blank"
+            rel="noreferrer"
+            title={m.url}
+            className="text-zinc-600 hover:text-teal-400 transition"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
+          </a>
         </h3>
         <StatusBadge status={m.currentStatus} />
       </div>
