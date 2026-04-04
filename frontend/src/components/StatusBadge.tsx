@@ -1,4 +1,4 @@
-type Status = 'up' | 'down' | 'unknown'
+type Status = 'up' | 'degraded' | 'down' | 'unknown'
 
 const cfg: Record<Status, { label: string; dot: string; bg: string; text: string }> = {
   up: {
@@ -6,6 +6,12 @@ const cfg: Record<Status, { label: string; dot: string; bg: string; text: string
     dot: 'bg-green-500',
     bg: 'bg-green-500/10',
     text: 'text-green-400',
+  },
+  degraded: {
+    label: 'Degraded',
+    dot: 'bg-amber-500',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-400',
   },
   down: {
     label: 'Down',
