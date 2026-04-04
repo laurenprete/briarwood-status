@@ -103,6 +103,11 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
                 }`}
               />
               <span className="text-zinc-500">{name}</span>
+              {check.status !== 'healthy' && check.reason && (
+                <span className={check.status === 'degraded' ? 'text-amber-400/70' : 'text-red-400/70'}>
+                  — {check.reason.toLowerCase()}
+                </span>
+              )}
             </div>
           ))}
         </div>

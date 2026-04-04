@@ -22,7 +22,7 @@ export interface CheckResult {
   error?: string
   ttl: number
   healthStatus?: 'healthy' | 'degraded' | 'unhealthy'
-  checks?: Record<string, { status: string; latencyMs?: number; error?: string }>
+  checks?: Record<string, { status: string; reason?: string; latencyMs?: number; error?: string }>
 }
 
 export interface StatusMonitor {
@@ -34,7 +34,7 @@ export interface StatusMonitor {
   currentStatus: 'up' | 'degraded' | 'down' | 'unknown'
   lastCheckedAt: string | null
   lastResponseTime: number | null
-  lastChecks?: Record<string, { status: string; latencyMs?: number; error?: string }>
+  lastChecks?: Record<string, { status: string; reason?: string; latencyMs?: number; error?: string }>
   uptime24h: number | null
   uptime7d: number | null
   uptime30d: number | null

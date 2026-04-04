@@ -530,7 +530,7 @@ app.get('/health', async (c) => {
   }
 
   type CheckStatus = 'healthy' | 'degraded' | 'unhealthy'
-  const checks: Record<string, { status: CheckStatus; latencyMs?: number; error?: string }> = {}
+  const checks: Record<string, { status: CheckStatus; reason: string; latencyMs?: number; error?: string }> = {}
 
   // Check DynamoDB — try to read from monitors table
   {
@@ -538,13 +538,16 @@ app.get('/health', async (c) => {
     try {
       await listMonitors()
       const latencyMs = Date.now() - start
+      const status: CheckStatus = latencyMs < 500 ? 'healthy' : latencyMs < 2000 ? 'degraded' : 'unhealthy'
       checks.dynamodb = {
-        status: latencyMs < 500 ? 'healthy' : latencyMs < 2000 ? 'degraded' : 'unhealthy',
+        status,
+        reason: status === 'healthy' ? 'Responding normally' : status === 'degraded' ? 'High latency' : 'Unreachable',
         latencyMs,
       }
     } catch (err) {
       checks.dynamodb = {
         status: 'unhealthy',
+        reason: 'Unreachable',
         latencyMs: Date.now() - start,
         error: err instanceof Error ? err.message : 'DynamoDB unreachable',
       }
@@ -556,7 +559,7 @@ app.get('/health', async (c) => {
     const region = process.env.COGNITO_REGION
     const poolId = process.env.COGNITO_USER_POOL_ID
     if (!region || !poolId) {
-      checks.auth = { status: 'unhealthy', error: 'Cognito env vars missing' }
+      checks.auth = { status: 'unhealthy', reason: 'Missing environment variables', error: 'Cognito env vars missing' }
     } else {
       const jwksUrl = `https://cognito-idp.${region}.amazonaws.com/${poolId}/.well-known/jwks.json`
       const start = Date.now()
@@ -568,12 +571,14 @@ app.get('/health', async (c) => {
         const latencyMs = Date.now() - start
         checks.auth = {
           status: res.ok ? 'healthy' : 'unhealthy',
+          reason: res.ok ? 'Responding normally' : 'JWKS endpoint unreachable',
           latencyMs,
           ...(!res.ok && { error: `JWKS returned ${res.status}` }),
         }
       } catch (err) {
         checks.auth = {
           status: 'unhealthy',
+          reason: 'JWKS endpoint unreachable',
           latencyMs: Date.now() - start,
           error: err instanceof Error ? err.message : 'Cognito JWKS unreachable',
         }
