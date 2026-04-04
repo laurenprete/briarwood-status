@@ -185,24 +185,24 @@ export default function StatusPage() {
     <div className={`min-h-screen flex flex-col font-sans ${light ? 'bg-gray-50 text-gray-900' : 'bg-zinc-950 text-zinc-100'}`}>
       {/* Header — always white text, brand color bg */}
       <header
-        className={`border-b ${light ? 'border-gray-200' : 'border-zinc-800'}`}
-        style={{ backgroundColor: branding?.brand?.primary ?? (light ? '#ffffff' : '#0d9488') }}
+        className={`border-b ${light ? 'border-gray-200 bg-white' : 'border-zinc-800 bg-zinc-900/80'}`}
+        style={branding?.brand ? { backgroundColor: branding.brand.primary } : undefined}
       >
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">
             {branding?.logoUrl ? (
               <img src={branding.logoUrl} alt="" className="h-8 w-8 object-contain" />
             ) : (
-              <i className={`fa-solid fa-shield-halved text-xl ${light && !branding?.brand ? 'text-gray-400' : 'text-white/80'}`} />
+              <i className={`fa-solid fa-shield-halved text-xl ${branding?.brand ? 'text-white/80' : 'text-teal-400'}`} />
             )}
-            <span className={`text-base font-semibold tracking-tight ${light && !branding?.brand ? 'text-gray-900' : 'text-white'}`}>
+            <span className={`text-base font-semibold tracking-tight ${branding?.brand ? 'text-white' : light ? 'text-gray-900' : 'text-zinc-100'}`}>
               {branding?.name
                 ? `${branding.name} System Status`
                 : 'Briarwood Software System Status'}
             </span>
           </div>
           {isLoggedIn() && (
-            <a href="/dashboard" className={`text-xs ${light && !branding?.brand ? 'text-gray-400 hover:text-gray-600' : 'text-white/50 hover:text-white/80'}`}>
+            <a href="/dashboard" className={`text-xs ${branding?.brand ? 'text-white/50 hover:text-white/80' : light ? 'text-gray-400 hover:text-gray-600' : 'text-zinc-500 hover:text-zinc-300'}`}>
               <i className="fa-solid fa-gear" /> Admin
             </a>
           )}
