@@ -13,10 +13,10 @@ export const createMonitorSchema = z.object({
     .min(1, 'url is required')
     .max(2048, 'url must be 2048 characters or fewer')
     .url('url must be a valid URL'),
-  group: z
+  groupSlug: z
     .string()
     .trim()
-    .max(100, 'group must be 100 characters or fewer')
+    .max(100, 'groupSlug must be 100 characters or fewer')
     .optional(),
   expectedStatus: z
     .number()
@@ -53,10 +53,10 @@ export const updateMonitorSchema = z.object({
     .max(2048, 'url must be 2048 characters or fewer')
     .url('url must be a valid URL')
     .optional(),
-  group: z
+  groupSlug: z
     .string()
     .trim()
-    .max(100, 'group must be 100 characters or fewer')
+    .max(100, 'groupSlug must be 100 characters or fewer')
     .optional(),
   expectedStatus: z
     .number()
@@ -76,6 +76,50 @@ export const updateMonitorSchema = z.object({
     .max(500, 'healthCheckPath must be 500 characters or fewer')
     .optional(),
   isPublic: z.boolean().optional(),
+})
+
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+export const createGroupSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'name is required')
+    .max(100, 'name must be 100 characters or fewer'),
+  slug: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'slug must be lowercase alphanumeric with hyphens')
+    .max(100, 'slug must be 100 characters or fewer')
+    .optional(),
+  brand: z.object({
+    primary: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'primary must be a hex color'),
+    accent: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'accent must be a hex color').optional(),
+  }).optional(),
+  isActive: z.boolean().default(true),
+})
+
+export const updateGroupSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'name cannot be empty')
+    .max(100, 'name must be 100 characters or fewer')
+    .optional(),
+  brand: z.object({
+    primary: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'primary must be a hex color'),
+    accent: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'accent must be a hex color').optional(),
+  }).optional()
+    .nullable(),
+  isActive: z.boolean().optional(),
+  logoUrl: z.string().url().optional().nullable(),
+  logoKey: z.string().optional().nullable(),
 })
 
 /** Extract the first human-readable error message from a Zod parse failure. */
