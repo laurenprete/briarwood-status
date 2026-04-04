@@ -145,13 +145,14 @@ export default function MonitorDetail() {
                       <th className="px-4 py-2.5">Status Code</th>
                       <th className="px-4 py-2.5">Response Time</th>
                       <th className="px-4 py-2.5">Error</th>
+                      <th className="px-4 py-2.5">Subsystems</th>
                     </tr>
                   </thead>
                   <tbody>
                     {checks.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={6}
                           className="px-4 py-8 text-center text-zinc-600"
                         >
                           No check data for this range.
@@ -175,15 +176,27 @@ export default function MonitorDetail() {
                             <td className="px-4 py-2">
                               <span
                                 className={`inline-flex items-center gap-1 ${
-                                  c.isUp ? 'text-green-400' : 'text-red-400'
+                                  c.healthStatus === 'degraded'
+                                    ? 'text-amber-400'
+                                    : c.isUp
+                                      ? 'text-green-400'
+                                      : 'text-red-400'
                                 }`}
                               >
                                 <span
                                   className={`h-1.5 w-1.5 rounded-full ${
-                                    c.isUp ? 'bg-green-500' : 'bg-red-500'
+                                    c.healthStatus === 'degraded'
+                                      ? 'bg-amber-500'
+                                      : c.isUp
+                                        ? 'bg-green-500'
+                                        : 'bg-red-500'
                                   }`}
                                 />
-                                {c.isUp ? 'Up' : 'Down'}
+                                {c.healthStatus === 'degraded'
+                                  ? 'Degraded'
+                                  : c.isUp
+                                    ? 'Healthy'
+                                    : 'Down'}
                               </span>
                             </td>
                             <td className="px-4 py-2 text-zinc-400">
@@ -196,6 +209,37 @@ export default function MonitorDetail() {
                               {c.error
                                 ? c.error.substring(0, 50)
                                 : '—'}
+                            </td>
+                            <td className="px-4 py-2">
+                              {c.checks && Object.keys(c.checks).length > 0 ? (
+                                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                                  {Object.entries(c.checks).map(([name, check]) => (
+                                    <span
+                                      key={name}
+                                      className={`inline-flex items-center gap-1 text-xs ${
+                                        check.status === 'healthy'
+                                          ? 'text-green-400/60'
+                                          : check.status === 'degraded'
+                                            ? 'text-amber-400'
+                                            : 'text-red-400'
+                                      }`}
+                                    >
+                                      <span
+                                        className={`h-1 w-1 rounded-full ${
+                                          check.status === 'healthy'
+                                            ? 'bg-green-500/60'
+                                            : check.status === 'degraded'
+                                              ? 'bg-amber-500'
+                                              : 'bg-red-500'
+                                        }`}
+                                      />
+                                      {name}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-zinc-700">—</span>
+                              )}
                             </td>
                           </tr>
                         ))
