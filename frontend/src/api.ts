@@ -4,6 +4,7 @@ import type {
   StatusSummary,
   CreateMonitorBody,
   UpdateMonitorBody,
+  Group,
 } from './types'
 import { getToken } from './auth'
 
@@ -22,8 +23,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 // --- Public ---
 
-export function getStatus(): Promise<StatusSummary> {
-  return request('/status')
+export function getStatus(groupSlug?: string): Promise<StatusSummary> {
+  const params = groupSlug ? `?group=${encodeURIComponent(groupSlug)}` : ''
+  return request(`/status${params}`)
 }
 
 // --- Monitors ---
@@ -72,4 +74,49 @@ export interface HealthCheckResult {
 
 export function runHealthCheck(id: string): Promise<HealthCheckResult> {
   return request(`/monitors/${id}/health-check`, { method: 'POST' })
+}
+
+// --- Groups ---
+
+export function getGroups(): Promise<Group[]> {
+  return request('/groups')
+}
+
+export function createGroup(body: { name: string; slug?: string; brand?: { primary: string; accent?: string }; isActive?: boolean }): Promise<Group> {
+  return request('/groups', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateGroup(slug: string, body: Record<string, any>): Promise<Group> {
+  return request(`/groups/${slug}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteGroup(slug: string): Promise<{ success: boolean }> {
+  return request(`/groups/${slug}`, { method: 'DELETE' })
+}
+
+export async function uploadGroupLogo(slug: string, file: File): Promise<{ logoUrl: string; logoKey: string }> {
+  const { uploadUrl, publicUrl, key } = await request<{ uploadUrl: string; publicUrl: string; key: string }>(
+    `/groups/${slug}/logo-upload`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentType: file.type }),
+    }
+  )
+
+  await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  })
+
+  return { logoUrl: publicUrl, logoKey: key }
 }

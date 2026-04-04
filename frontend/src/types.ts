@@ -1,3 +1,17 @@
+export interface Group {
+  slug: string
+  name: string
+  isActive: boolean
+  logoUrl?: string
+  logoKey?: string
+  brand?: {
+    primary: string
+    accent?: string
+  }
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Monitor {
   id: string
   name: string
@@ -28,7 +42,8 @@ export interface CheckResult {
 export interface StatusMonitor {
   id: string
   name: string
-  group?: string
+  groupSlug?: string
+  groupName?: string
   url: string
   healthCheckEnabled?: boolean
   currentStatus: 'up' | 'degraded' | 'down' | 'unknown'
@@ -42,6 +57,12 @@ export interface StatusMonitor {
 }
 
 export interface StatusSummary {
+  branding?: {
+    name: string
+    slug: string
+    logoUrl?: string
+    brand?: { primary: string; accent?: string }
+  }
   monitors: StatusMonitor[]
   overall: 'operational' | 'degraded' | 'outage'
   lastUpdated: string
@@ -50,7 +71,7 @@ export interface StatusSummary {
 export type CreateMonitorBody = {
   name: string
   url: string
-  group?: string
+  groupSlug?: string
   expectedStatus?: number
   alertEmails?: string[]
   isActive?: boolean
