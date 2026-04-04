@@ -12,6 +12,8 @@ type CheckEngineResult = {
   responseTime: number
   isUp: boolean
   error?: string
+  healthStatus?: 'healthy' | 'degraded' | 'unhealthy'
+  checks?: Record<string, { status: string; latencyMs?: number; error?: string }>
 }
 
 /** Returns the URL the checker should actually fetch for a monitor. */
@@ -80,6 +82,8 @@ async function processMonitor(monitor: Monitor): Promise<void> {
       responseTime: check.responseTime,
       isUp: check.isUp,
       ...(check.error !== undefined && { error: check.error }),
+      ...(check.healthStatus !== undefined && { healthStatus: check.healthStatus }),
+      ...(check.checks !== undefined && { checks: check.checks }),
       ttl: Math.floor(Date.now() / 1000) + CHECK_TTL_SECONDS,
     }
 
@@ -128,7 +132,6 @@ async function runHttpCheck(monitor: Monitor, url: string): Promise<CheckEngineR
   const timeout = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS)
   const started = Date.now()
 
-  // Send health check token header when using a health check endpoint
   const headers: Record<string, string> = {}
   if (monitor.healthCheckEnabled) {
     const token = process.env.HEALTH_CHECK_TOKEN
@@ -145,8 +148,33 @@ async function runHttpCheck(monitor: Monitor, url: string): Promise<CheckEngineR
 
     const responseTime = Date.now() - started
     const statusCode = response.status
-    const isUp = statusCode === monitor.expectedStatus
 
+    // For health-check-enabled monitors, parse the response body
+    if (monitor.healthCheckEnabled) {
+      try {
+        const text = await response.text()
+        const body = JSON.parse(text)
+        const healthStatus: 'healthy' | 'degraded' | 'unhealthy' =
+          body.status === 'degraded' ? 'degraded'
+          : body.status === 'unhealthy' ? 'unhealthy'
+          : 'healthy'
+
+        return {
+          statusCode,
+          responseTime,
+          isUp: healthStatus !== 'unhealthy',
+          healthStatus,
+          checks: body.checks,
+        }
+      } catch {
+        // JSON parse failed — fall back to status code check
+        const isUp = statusCode === monitor.expectedStatus
+        return { statusCode, responseTime, isUp }
+      }
+    }
+
+    // Non-health-check monitors: simple status code comparison
+    const isUp = statusCode === monitor.expectedStatus
     return { statusCode, responseTime, isUp }
   } catch (err: unknown) {
     const responseTime = Date.now() - started
