@@ -100,7 +100,7 @@ export default function HealthCheckModal({
                       <th className="px-4 py-2">Check</th>
                       <th className="px-4 py-2">Status</th>
                       <th className="px-4 py-2">Latency</th>
-                      <th className="px-4 py-2">Error</th>
+                      <th className="px-4 py-2">Reason</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -121,8 +121,8 @@ export default function HealthCheckModal({
                         <td className="px-4 py-2 text-zinc-400">
                           {check.latencyMs !== undefined ? `${check.latencyMs}ms` : '—'}
                         </td>
-                        <td className="px-4 py-2 text-zinc-600 text-xs">
-                          {check.error || '—'}
+                        <td className="px-4 py-2 text-zinc-400 text-xs">
+                          {check.reason || check.error || '—'}
                         </td>
                       </tr>
                     ))}
