@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getStatus } from '../api'
 import type { StatusSummary, StatusMonitor } from '../types'
 import UptimeBar from '../components/UptimeBar'
@@ -108,6 +109,9 @@ function MonitorGroups({ monitors }: { monitors: StatusMonitor[] }) {
 }
 
 export default function StatusPage() {
+  const [searchParams] = useSearchParams()
+  const groupFilter = searchParams.get('group')
+
   const [status, setStatus] = useState<StatusSummary | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -119,7 +123,22 @@ export default function StatusPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const oc = status ? overallConfig[status.overall] : null
+  const filteredMonitors = useMemo(() => {
+    if (!status) return []
+    if (!groupFilter) return status.monitors
+    return status.monitors.filter(
+      (m) => m.group?.toLowerCase() === groupFilter.toLowerCase(),
+    )
+  }, [status, groupFilter])
+
+  const filteredOverall = useMemo((): 'operational' | 'degraded' | 'outage' => {
+    if (!groupFilter || !status) return status?.overall ?? 'operational'
+    if (filteredMonitors.some((m) => m.currentStatus === 'down')) return 'outage'
+    if (filteredMonitors.some((m) => m.currentStatus === 'unknown')) return 'degraded'
+    return 'operational'
+  }, [status, groupFilter, filteredMonitors])
+
+  const oc = overallConfig[filteredOverall]
 
   return (
     <div className="min-h-screen bg-zinc-950 font-sans">
@@ -129,7 +148,7 @@ export default function StatusPage() {
           <div className="flex items-center gap-3">
             <i className="fa-solid fa-shield-halved text-lg text-teal-400" />
             <span className="text-sm font-semibold tracking-tight text-zinc-100">
-              Briarwood Software System Status
+              {groupFilter ? `${groupFilter} System Status` : 'Briarwood Software System Status'}
             </span>
           </div>
           {isLoggedIn() && (
@@ -168,12 +187,12 @@ export default function StatusPage() {
             )}
 
             {/* Monitor cards */}
-            {status.monitors.length === 0 ? (
+            {filteredMonitors.length === 0 ? (
               <div className="py-20 text-center text-zinc-500">
-                No monitors configured yet.
+                {groupFilter ? 'No monitors found for this group.' : 'No monitors configured yet.'}
               </div>
             ) : (
-              <MonitorGroups monitors={status.monitors} />
+              <MonitorGroups monitors={filteredMonitors} />
             )}
 
             {/* Timestamp */}
