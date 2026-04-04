@@ -58,7 +58,7 @@ const overallConfig = {
 
 function MonitorCard({ m }: { m: StatusMonitor }) {
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+    <div className="rounded-lg border bg-zinc-900 p-4" style={{ borderColor: 'color-mix(in srgb, var(--brand-primary) 25%, #27272a)' }}>
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span
@@ -118,7 +118,7 @@ function MonitorGroups({ monitors }: { monitors: StatusMonitor[] }) {
       {groups.map((g) => (
         <div key={g.name}>
           {showHeaders && (
-            <h2 className="mb-2 border-b border-zinc-800 pb-1.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <h2 className="mb-2 border-b pb-1.5 text-xs font-medium uppercase tracking-wide" style={{ borderColor: 'color-mix(in srgb, var(--brand-primary) 30%, #27272a)', color: 'var(--brand-accent)' }}>
               {g.name}
             </h2>
           )}
@@ -175,16 +175,19 @@ export default function StatusPage() {
         '--brand-accent': branding?.brand?.accent ?? branding?.brand?.primary ?? '#2dd4bf',
       } as React.CSSProperties}
     >
+      {/* Brand accent bar */}
+      <div className="h-1" style={{ backgroundColor: 'var(--brand-primary)' }} />
+
       {/* Header */}
-      <header className="border-b bg-zinc-900/50" style={{ borderColor: `${branding?.brand?.primary ?? '#27272a'}40` }}>
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-3">
+      <header className="border-b border-zinc-800 bg-zinc-900/50">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">
             {branding?.logoUrl ? (
-              <img src={branding.logoUrl} alt="" className="h-7 w-7 object-contain" />
+              <img src={branding.logoUrl} alt="" className="h-8 w-8 object-contain" />
             ) : (
-              <i className="fa-solid fa-shield-halved text-lg" style={{ color: 'var(--brand-primary)' }} />
+              <i className="fa-solid fa-shield-halved text-xl" style={{ color: 'var(--brand-primary)' }} />
             )}
-            <span className="text-sm font-semibold tracking-tight text-zinc-100">
+            <span className="text-base font-semibold tracking-tight" style={{ color: 'var(--brand-accent)' }}>
               {branding?.name
                 ? `${branding.name} System Status`
                 : 'Briarwood Software System Status'}
@@ -218,10 +221,26 @@ export default function StatusPage() {
             {/* Overall status banner */}
             {oc && (
               <div
-                className={`mb-5 flex items-center gap-3 rounded-lg ${oc.bg} px-4 py-3`}
+                className={`mb-5 flex items-center gap-3 rounded-lg px-4 py-3 ${
+                  filteredOverall === 'operational'
+                    ? 'border'
+                    : oc.bg
+                }`}
+                style={filteredOverall === 'operational' ? {
+                  backgroundColor: 'color-mix(in srgb, var(--brand-primary) 10%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)',
+                } : undefined}
               >
-                <i className={`fa-solid ${oc.icon} text-lg ${oc.text}`} />
-                <span className={`text-sm font-medium ${oc.text}`}>{oc.label}</span>
+                <i
+                  className={`fa-solid ${oc.icon} text-lg ${filteredOverall === 'operational' ? '' : oc.text}`}
+                  style={filteredOverall === 'operational' ? { color: 'var(--brand-primary)' } : undefined}
+                />
+                <span
+                  className={`text-sm font-medium ${filteredOverall === 'operational' ? '' : oc.text}`}
+                  style={filteredOverall === 'operational' ? { color: 'var(--brand-primary)' } : undefined}
+                >
+                  {oc.label}
+                </span>
               </div>
             )}
 
@@ -244,9 +263,9 @@ export default function StatusPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800 py-2 text-center text-xs text-zinc-600">
+      <footer className="border-t border-zinc-800 py-3 text-center text-xs text-zinc-600">
         Powered by{' '}
-        <a href="https://briarwoodsoftware.com" target="_blank" rel="noreferrer" className="font-medium text-zinc-400 hover:text-teal-400">Briarwood Software</a>
+        <a href="https://briarwoodsoftware.com" target="_blank" rel="noreferrer" className="font-medium text-zinc-400" style={{ ['--hover-color' as string]: 'var(--brand-accent)' }} onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-accent)')} onMouseLeave={(e) => (e.currentTarget.style.color = '')}>Briarwood Software</a>
       </footer>
     </div>
   )
