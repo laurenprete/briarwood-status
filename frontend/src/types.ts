@@ -82,5 +82,5 @@ export type CreateMonitorBody = {
 }
 
 export type UpdateMonitorBody = Partial<
-  Pick<Monitor, 'name' | 'group' | 'url' | 'expectedStatus' | 'alertEmails' | 'isActive'>
+  Pick<Monitor, 'name' | 'groupSlug' | 'url' | 'expectedStatus' | 'alertEmails' | 'isActive'>
 >

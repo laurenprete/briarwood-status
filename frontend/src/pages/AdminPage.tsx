@@ -135,7 +135,7 @@ export default function AdminPage() {
                     {m.name}
                   </td>
                   <td className="px-4 py-3 text-zinc-400">
-                    {m.group || '—'}
+                    {m.groupName || '—'}
                   </td>
                   <td className="max-w-[200px] truncate px-4 py-3 text-zinc-400">
                     {m.url}
