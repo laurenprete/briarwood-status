@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getStatus, getMonitorChecks } from '../api'
 import type { StatusMonitor, CheckResult } from '../types'
@@ -6,12 +6,14 @@ import StatusBadge from '../components/StatusBadge'
 import ResponseChart from '../components/ResponseChart'
 
 type Range = '24h' | '7d' | '30d'
+type StatusFilter = 'all' | 'healthy' | 'degraded' | 'down'
 
 export default function MonitorDetail() {
   const { id } = useParams<{ id: string }>()
   const [monitor, setMonitor] = useState<StatusMonitor | null>(null)
   const [checks, setChecks] = useState<CheckResult[]>([])
   const [range, setRange] = useState<Range>('24h')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -37,6 +39,16 @@ export default function MonitorDetail() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const filteredChecks = useMemo(() => {
+    if (statusFilter === 'all') return checks
+    return checks.filter((c) => {
+      if (statusFilter === 'degraded') return c.healthStatus === 'degraded'
+      if (statusFilter === 'down') return !c.isUp
+      // 'healthy' = up and not degraded
+      return c.isUp && c.healthStatus !== 'degraded'
+    })
+  }, [checks, statusFilter])
 
   return (
     <div>
@@ -132,9 +144,40 @@ export default function MonitorDetail() {
 
           {/* Check history table */}
           <div>
-            <h2 className="mb-3 text-sm font-medium text-zinc-400">
-              Check History
-            </h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-medium text-zinc-400">
+                Check History
+              </h2>
+              <div className="flex rounded-lg border border-zinc-800 bg-zinc-900/50">
+                {([
+                  { key: 'all', label: 'All' },
+                  { key: 'healthy', label: 'Healthy' },
+                  { key: 'degraded', label: 'Degraded' },
+                  { key: 'down', label: 'Down' },
+                ] as { key: StatusFilter; label: string }[]).map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setStatusFilter(f.key)}
+                    className={`px-3 py-1 text-xs transition ${
+                      statusFilter === f.key
+                        ? 'bg-zinc-800 text-teal-400'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    {f.label}
+                    {f.key !== 'all' && checks.length > 0 && (
+                      <span className="ml-1 text-zinc-600">
+                        {checks.filter((c) =>
+                          f.key === 'degraded' ? c.healthStatus === 'degraded'
+                          : f.key === 'down' ? !c.isUp
+                          : c.isUp && c.healthStatus !== 'degraded'
+                        ).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="overflow-hidden rounded-lg border border-zinc-800">
               <div className="overflow-x-auto overflow-y-auto max-h-[480px] scrollbar-thin">
                 <table className="w-full text-sm">
@@ -149,17 +192,19 @@ export default function MonitorDetail() {
                     </tr>
                   </thead>
                   <tbody>
-                    {checks.length === 0 ? (
+                    {filteredChecks.length === 0 ? (
                       <tr>
                         <td
                           colSpan={6}
                           className="px-4 py-8 text-center text-zinc-600"
                         >
-                          No check data for this range.
+                          {checks.length === 0
+                            ? 'No check data for this range.'
+                            : 'No checks match this filter.'}
                         </td>
                       </tr>
                     ) : (
-                      [...checks]
+                      [...filteredChecks]
                         .sort(
                           (a, b) =>
                             new Date(b.timestamp).getTime() -

@@ -7,7 +7,19 @@
  * Gray   = no check data for that day
  */
 
-type DayUptime = { date: string; uptime: number | null }
+type DayUptime = { date: string; uptime: number | null; affectedSubsystems?: string[] }
+
+function formatDate(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso + 'T00:00:00Z')
+  return d.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
 
 export default function UptimeBar({
   dailyUptime,
@@ -31,8 +43,18 @@ export default function UptimeBar({
   }
 
   function tooltip(day: DayUptime): string {
-    if (day.uptime === null) return day.date ? `${day.date}: No data` : 'No data'
-    return `${day.date}: ${day.uptime.toFixed(1)}%`
+    if (!day.date) return 'No data'
+    const date = formatDate(day.date)
+
+    if (day.uptime === null) return `${date}\nNo data`
+
+    const lines = [date, `Uptime: ${day.uptime.toFixed(1)}%`]
+
+    if (day.affectedSubsystems && day.affectedSubsystems.length > 0) {
+      lines.push(`Affected: ${day.affectedSubsystems.join(', ')}`)
+    }
+
+    return lines.join('\n')
   }
 
   return (

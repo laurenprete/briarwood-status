@@ -84,9 +84,9 @@ function computeDailyUptime(
   checks: CheckResult[],
   days: number,
   nowMs: number
-): Array<{ date: string; uptime: number | null }> {
+): Array<{ date: string; uptime: number | null; affectedSubsystems?: string[] }> {
   // Build day buckets (midnight UTC boundaries)
-  const result: Array<{ date: string; uptime: number | null }> = []
+  const result: Array<{ date: string; uptime: number | null; affectedSubsystems?: string[] }> = []
   const msPerDay = 24 * 60 * 60 * 1000
 
   for (let i = days - 1; i >= 0; i--) {
@@ -99,9 +99,22 @@ function computeDailyUptime(
       return t >= dayStart.getTime() && t < dayEnd.getTime()
     })
 
+    // Collect subsystems that were degraded or unhealthy on this day
+    const affected = new Set<string>()
+    for (const c of dayChecks) {
+      if (c.checks) {
+        for (const [name, check] of Object.entries(c.checks)) {
+          if ((check as any).status !== 'healthy') {
+            affected.add(name)
+          }
+        }
+      }
+    }
+
     result.push({
       date: dayStart.toISOString().slice(0, 10),
       uptime: calculateUptime(dayChecks),
+      ...(affected.size > 0 && { affectedSubsystems: [...affected] }),
     })
   }
 
