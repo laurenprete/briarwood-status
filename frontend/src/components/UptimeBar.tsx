@@ -7,6 +7,8 @@
  * Gray   = no check data for that day
  */
 
+import { useState, useRef } from 'react'
+
 type DayUptime = { date: string; uptime: number | null; affectedSubsystems?: string[] }
 
 function formatDate(iso: string): string {
@@ -21,11 +23,29 @@ function formatDate(iso: string): string {
   })
 }
 
+function uptimeColor(uptime: number | null): string {
+  if (uptime === null) return 'text-zinc-500'
+  if (uptime >= 100) return 'text-green-400'
+  if (uptime >= 97) return 'text-amber-400'
+  return 'text-red-400'
+}
+
+function barColor(uptime: number | null): string {
+  if (uptime === null) return 'bg-zinc-700'
+  if (uptime >= 100) return 'bg-green-500'
+  if (uptime >= 97) return 'bg-amber-500'
+  return 'bg-red-500'
+}
+
 export default function UptimeBar({
   dailyUptime,
 }: {
   dailyUptime: DayUptime[]
 }) {
+  const [hovered, setHovered] = useState<number | null>(null)
+  const [tooltipPos, setTooltipPos] = useState<'left' | 'center' | 'right'>('center')
+  const barRef = useRef<HTMLDivElement>(null)
+
   // Pad to 30 blocks if we have fewer days of data
   const days = 30
   const padded: DayUptime[] = []
@@ -35,37 +55,73 @@ export default function UptimeBar({
   }
   padded.push(...dailyUptime.slice(-days))
 
-  function color(uptime: number | null): string {
-    if (uptime === null) return 'bg-zinc-700'
-    if (uptime >= 100) return 'bg-green-500'
-    if (uptime >= 97) return 'bg-amber-500'
-    return 'bg-red-500'
-  }
-
-  function tooltip(day: DayUptime): string {
-    if (!day.date) return 'No data'
-    const date = formatDate(day.date)
-
-    if (day.uptime === null) return `${date}\nNo data`
-
-    const lines = [date, `Uptime: ${day.uptime.toFixed(1)}%`]
-
-    if (day.affectedSubsystems && day.affectedSubsystems.length > 0) {
-      lines.push(`Affected: ${day.affectedSubsystems.join(', ')}`)
+  const handleMouseEnter = (index: number, e: React.MouseEvent) => {
+    setHovered(index)
+    // Position tooltip based on where the block is in the bar
+    if (barRef.current) {
+      const barRect = barRef.current.getBoundingClientRect()
+      const blockRect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+      const blockCenter = blockRect.left + blockRect.width / 2 - barRect.left
+      const barWidth = barRect.width
+      if (blockCenter < barWidth * 0.2) setTooltipPos('left')
+      else if (blockCenter > barWidth * 0.8) setTooltipPos('right')
+      else setTooltipPos('center')
     }
-
-    return lines.join('\n')
   }
+
+  const day = hovered !== null ? padded[hovered] : null
 
   return (
-    <div className="flex gap-[2px]">
-      {padded.map((day, i) => (
+    <div className="relative">
+      <div ref={barRef} className="flex gap-[2px]">
+        {padded.map((d, i) => (
+          <div
+            key={i}
+            className={`h-6 flex-1 rounded-[2px] ${barColor(d.uptime)} transition-colors ${
+              hovered === i ? 'ring-1 ring-white/40' : ''
+            }`}
+            onMouseEnter={(e) => handleMouseEnter(i, e)}
+            onMouseLeave={() => setHovered(null)}
+          />
+        ))}
+      </div>
+
+      {day && hovered !== null && (
         <div
-          key={i}
-          className={`h-6 flex-1 rounded-[2px] ${color(day.uptime)} transition-colors`}
-          title={tooltip(day)}
-        />
-      ))}
+          className={`absolute z-20 mt-2 w-52 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 shadow-xl pointer-events-none ${
+            tooltipPos === 'left'
+              ? 'left-0'
+              : tooltipPos === 'right'
+                ? 'right-0'
+                : 'left-1/2 -translate-x-1/2'
+          }`}
+        >
+          <div className="text-xs font-medium text-zinc-200">
+            {day.date ? formatDate(day.date) : 'No data'}
+          </div>
+
+          {day.date && day.uptime !== null && (
+            <div className={`mt-1 text-sm font-semibold ${uptimeColor(day.uptime)}`}>
+              {day.uptime.toFixed(1)}% uptime
+            </div>
+          )}
+
+          {day.date && day.uptime === null && (
+            <div className="mt-1 text-xs text-zinc-500">No check data</div>
+          )}
+
+          {day.affectedSubsystems && day.affectedSubsystems.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 border-t border-zinc-700/50 pt-1.5">
+              {day.affectedSubsystems.map((name) => (
+                <span key={name} className="inline-flex items-center gap-1 text-xs text-amber-400/80">
+                  <span className="h-1 w-1 rounded-full bg-amber-500" />
+                  {name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
