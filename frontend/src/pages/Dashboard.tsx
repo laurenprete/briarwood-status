@@ -88,6 +88,25 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
           </div>
         </div>
       </div>
+
+      {m.lastChecks && Object.keys(m.lastChecks).length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-zinc-800/50 pt-2">
+          {Object.entries(m.lastChecks).map(([name, check]) => (
+            <div key={name} className="flex items-center gap-1.5 text-xs">
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  check.status === 'healthy'
+                    ? 'bg-green-500'
+                    : check.status === 'degraded'
+                      ? 'bg-amber-500'
+                      : 'bg-red-500'
+                }`}
+              />
+              <span className="text-zinc-500">{name}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </Link>
   )
 }
