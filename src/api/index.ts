@@ -458,9 +458,11 @@ app.get('/status', async (c) => {
           name: monitor.name,
           url: monitor.url,
           group: monitor.group,
+          healthCheckEnabled: monitor.healthCheckEnabled,
           currentStatus: state?.currentStatus ?? ('unknown' as const),
           lastCheckedAt: state?.lastCheckedAt ?? null,
           lastResponseTime: state?.lastResponseTime ?? null,
+          ...(state?.lastChecks && { lastChecks: state.lastChecks }),
           uptime24h: calculateUptime(checks24h),
           uptime7d: calculateUptime(checks7d),
           uptime30d: calculateUptime(checks30d),
@@ -474,9 +476,14 @@ app.get('/status', async (c) => {
       const downCount = monitors.filter(
         (m) => m.currentStatus === 'down'
       ).length
+      const degradedCount = monitors.filter(
+        (m) => m.currentStatus === 'degraded'
+      ).length
       if (downCount === monitors.length) {
         overall = 'outage'
       } else if (downCount > 0) {
+        overall = 'degraded'
+      } else if (degradedCount > 0) {
         overall = 'degraded'
       }
     }
