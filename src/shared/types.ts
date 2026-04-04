@@ -2,13 +2,28 @@ export interface Monitor {
   id: string
   name: string
   url: string
-  group?: string
+  groupSlug?: string
+  groupName?: string
   expectedStatus: number
   isActive: boolean
   alertEmails: string[]
   healthCheckEnabled: boolean
   healthCheckPath: string
   isPublic: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Group {
+  slug: string
+  name: string
+  isActive: boolean
+  logoUrl?: string
+  logoKey?: string
+  brand?: {
+    primary: string
+    accent?: string
+  }
   createdAt: string
   updatedAt: string
 }
@@ -39,11 +54,18 @@ export interface MonitorState {
 }
 
 export interface StatusSummary {
+  branding?: {
+    name: string
+    slug: string
+    logoUrl?: string
+    brand?: { primary: string; accent?: string }
+  }
   monitors: Array<{
     id: string
     name: string
     url: string
-    group?: string
+    groupSlug?: string
+    groupName?: string
     healthCheckEnabled: boolean
     currentStatus: 'up' | 'degraded' | 'down' | 'unknown'
     lastCheckedAt: string | null
