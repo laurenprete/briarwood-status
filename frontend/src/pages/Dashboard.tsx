@@ -16,12 +16,12 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-function groupMonitors<T extends { group?: string }>(
+function groupMonitors<T extends { groupName?: string }>(
   monitors: T[],
 ): { name: string; monitors: T[] }[] {
   const groups = new Map<string, T[]>()
   for (const m of monitors) {
-    const key = m.group?.trim() || 'Other'
+    const key = m.groupName?.trim() || 'Other'
     const arr = groups.get(key) || []
     arr.push(m)
     groups.set(key, arr)
