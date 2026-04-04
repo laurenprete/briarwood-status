@@ -58,7 +58,7 @@ const overallConfig = {
 
 function MonitorCard({ m }: { m: StatusMonitor }) {
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+    <div className={`rounded-lg border p-4 ${light ? 'border-gray-200 bg-white' : 'border-zinc-800 bg-zinc-900'}`}>
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span
@@ -72,9 +72,9 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
                     : 'bg-zinc-500'
             }`}
           />
-          <span className="text-sm font-medium text-zinc-100">{m.name}</span>
+          <span className={`text-sm font-medium ${light ? 'text-gray-900' : 'text-zinc-100'}`}>{m.name}</span>
         </div>
-        <div className="flex items-center gap-4 text-xs text-zinc-500">
+        <div className={`flex items-center gap-4 text-xs ${light ? 'text-gray-400' : 'text-zinc-500'}`}>
           <span>
             {m.uptime30d !== null ? `${m.uptime30d.toFixed(2)}%` : '—'}
           </span>
@@ -95,7 +95,7 @@ function MonitorCard({ m }: { m: StatusMonitor }) {
                       : 'bg-red-500'
                 }`}
               />
-              <span className="text-zinc-500">{name}</span>
+              <span className={light ? 'text-gray-400' : 'text-zinc-500'}>{name}</span>
               {check.status !== 'healthy' && check.reason && (
                 <span className={check.status === 'degraded' ? 'text-amber-400/70' : 'text-red-400/70'}>
                   — {check.reason.toLowerCase()}
@@ -118,7 +118,7 @@ function MonitorGroups({ monitors }: { monitors: StatusMonitor[] }) {
       {groups.map((g) => (
         <div key={g.name}>
           {showHeaders && (
-            <h2 className="mb-2 border-b border-zinc-800 pb-1.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <h2 className={`mb-2 border-b pb-1.5 text-xs font-medium uppercase tracking-wide ${light ? 'border-gray-200 text-gray-400' : 'border-zinc-800 text-zinc-500'}`}>
               {g.name}
             </h2>
           )}
@@ -142,6 +142,7 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true)
 
   const branding = status?.branding
+  const light = branding?.theme === 'light'
 
   useEffect(() => {
     getStatus(groupFilter || undefined)
@@ -168,27 +169,27 @@ export default function StatusPage() {
   const oc = overallConfig[filteredOverall]
 
   return (
-    <div className="min-h-screen bg-zinc-950 font-sans">
+    <div className={`min-h-screen font-sans ${light ? 'bg-gray-50 text-gray-900' : 'bg-zinc-950 text-zinc-100'}`}>
       {/* Header */}
       <header
-        className="border-b border-zinc-800"
-        style={{ backgroundColor: branding?.brand?.primary ?? '#18181b' }}
+        className={`border-b ${light ? 'border-gray-200' : 'border-zinc-800'}`}
+        style={{ backgroundColor: branding?.brand?.primary ?? (light ? '#ffffff' : '#18181b') }}
       >
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">
             {branding?.logoUrl ? (
               <img src={branding.logoUrl} alt="" className="h-8 w-8 object-contain" />
             ) : (
-              <i className="fa-solid fa-shield-halved text-xl text-white/80" />
+              <i className={`fa-solid fa-shield-halved text-xl ${branding?.brand ? 'text-white/80' : light ? 'text-gray-400' : 'text-zinc-400'}`} />
             )}
-            <span className="text-base font-semibold tracking-tight text-white">
+            <span className={`text-base font-semibold tracking-tight ${branding?.brand ? 'text-white' : light ? 'text-gray-900' : 'text-zinc-100'}`}>
               {branding?.name
                 ? `${branding.name} System Status`
                 : 'Briarwood Software System Status'}
             </span>
           </div>
           {isLoggedIn() && (
-            <a href="/dashboard" className="text-xs text-white/50 hover:text-white/80">
+            <a href="/dashboard" className={`text-xs ${branding?.brand ? 'text-white/50 hover:text-white/80' : light ? 'text-gray-400 hover:text-gray-600' : 'text-zinc-500 hover:text-zinc-300'}`}>
               <i className="fa-solid fa-gear" /> Admin
             </a>
           )}
@@ -197,7 +198,7 @@ export default function StatusPage() {
 
       <main className="mx-auto max-w-4xl px-5 py-6">
         {loading && (
-          <div className="py-20 text-center text-zinc-500">
+          <div className={`py-20 text-center ${light ? 'text-gray-400' : 'text-zinc-500'}`}>
             <i className="fa-solid fa-spinner fa-spin mr-2" />
             Loading status...
           </div>
@@ -224,7 +225,7 @@ export default function StatusPage() {
 
             {/* Monitor cards */}
             {filteredMonitors.length === 0 ? (
-              <div className="py-20 text-center text-zinc-500">
+              <div className={`py-20 text-center ${light ? 'text-gray-400' : 'text-zinc-500'}`}>
                 {groupFilter ? 'No monitors found for this group.' : 'No monitors configured yet.'}
               </div>
             ) : (
@@ -232,7 +233,7 @@ export default function StatusPage() {
             )}
 
             {/* Timestamp */}
-            <p className="mt-5 text-center text-xs text-zinc-600">
+            <p className={`mt-5 text-center text-xs ${light ? 'text-gray-400' : 'text-zinc-600'}`}>
               Last updated:{' '}
               {new Date(status.lastUpdated).toLocaleString()}
             </p>
@@ -241,9 +242,9 @@ export default function StatusPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800 py-3 text-center text-xs text-zinc-600">
+      <footer className={`border-t py-3 text-center text-xs ${light ? 'border-gray-200 text-gray-400' : 'border-zinc-800 text-zinc-600'}`}>
         Powered by{' '}
-        <a href="https://briarwoodsoftware.com" target="_blank" rel="noreferrer" className="font-medium text-zinc-400 hover:text-zinc-200">Briarwood Software</a>
+        <a href="https://briarwoodsoftware.com" target="_blank" rel="noreferrer" className={`font-medium ${light ? 'text-gray-500 hover:text-gray-700' : 'text-zinc-400 hover:text-zinc-200'}`}>Briarwood Software</a>
       </footer>
     </div>
   )

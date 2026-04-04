@@ -101,6 +101,7 @@ export const createGroupSchema = z.object({
   brand: z.object({
     primary: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'primary must be a hex color'),
   }).optional(),
+  theme: z.enum(['dark', 'light']).default('dark'),
   isActive: z.boolean().default(true),
 })
 
@@ -115,6 +116,7 @@ export const updateGroupSchema = z.object({
     primary: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'primary must be a hex color'),
   }).optional()
     .nullable(),
+  theme: z.enum(['dark', 'light']).optional(),
   isActive: z.boolean().optional(),
   logoUrl: z.string().url().optional().nullable(),
   logoKey: z.string().optional().nullable(),

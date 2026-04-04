@@ -7,6 +7,7 @@ export interface Group {
   brand?: {
     primary: string
   }
+  theme?: 'dark' | 'light'
   createdAt: string
   updatedAt: string
 }
@@ -61,7 +62,8 @@ export interface StatusSummary {
     name: string
     slug: string
     logoUrl?: string
-    brand?: { primary: string; accent?: string }
+    brand?: { primary: string }
+    theme?: 'dark' | 'light'
   }
   monitors: StatusMonitor[]
   overall: 'operational' | 'degraded' | 'outage'

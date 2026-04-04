@@ -503,6 +503,7 @@ app.put('/groups/:slug', authMiddleware, async (c) => {
       ...existing,
       ...(body.name !== undefined && { name: body.name }),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
+      ...(body.theme !== undefined && { theme: body.theme }),
       // null means "clear this field"; undefined means "leave unchanged"
       ...(body.brand !== undefined && { brand: body.brand ?? undefined }),
       ...(body.logoUrl !== undefined && { logoUrl: body.logoUrl ?? undefined }),
@@ -639,6 +640,7 @@ app.get('/status', async (c) => {
           slug: group.slug,
           ...(group.logoUrl && { logoUrl: group.logoUrl }),
           ...(group.brand && { brand: group.brand }),
+          ...(group.theme && { theme: group.theme }),
         }
       }
     }

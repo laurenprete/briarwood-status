@@ -8,6 +8,7 @@ interface Props {
     name: string
     slug?: string
     brand?: { primary: string }
+    theme?: 'dark' | 'light'
     isActive?: boolean
     logoUrl?: string | null
     logoKey?: string | null
@@ -29,6 +30,7 @@ export default function GroupModal({ group, onSave, onClose }: Props) {
   const [customBrand, setCustomBrand] = useState(false)
   const [primary, setPrimary] = useState('#0d9488')
   const [primaryHex, setPrimaryHex] = useState('#0d9488')
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [isActive, setIsActive] = useState(true)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -43,6 +45,7 @@ export default function GroupModal({ group, onSave, onClose }: Props) {
       setName(group.name)
       setSlug(group.slug)
       setIsActive(group.isActive)
+      setTheme(group.theme || 'dark')
       if (group.brand) {
         setCustomBrand(true)
         setPrimary(group.brand.primary)
@@ -106,6 +109,7 @@ export default function GroupModal({ group, onSave, onClose }: Props) {
         name: name.trim(),
         ...(isEditing ? {} : { slug: slug.trim() }),
         brand: customBrand ? { primary } : undefined,
+        theme,
         isActive,
         ...(logoUrl !== undefined ? { logoUrl, logoKey } : {}),
       })
@@ -196,6 +200,31 @@ export default function GroupModal({ group, onSave, onClose }: Props) {
               <p className="mt-1.5 text-xs text-zinc-600">Used as the navbar background on the public status page.</p>
             </div>
           )}
+
+          {/* Theme toggle */}
+          <div>
+            <label className="mb-1 block text-sm text-zinc-400">Theme</label>
+            <div className="flex rounded-lg border border-zinc-700 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`flex-1 px-3 py-1.5 text-sm transition ${
+                  theme === 'dark' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <i className="fa-solid fa-moon mr-1.5 text-xs" />Dark
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`flex-1 px-3 py-1.5 text-sm transition ${
+                  theme === 'light' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <i className="fa-solid fa-sun mr-1.5 text-xs" />Light
+              </button>
+            </div>
+          </div>
 
           {/* Logo upload — only shown when editing */}
           {isEditing && (
