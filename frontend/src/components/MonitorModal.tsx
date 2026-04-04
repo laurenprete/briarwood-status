@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Monitor, CreateMonitorBody } from '../types'
+import { getGroups } from '../api'
+import type { Group } from '../types'
 
 interface Props {
   monitor?: Monitor | null
@@ -9,7 +11,8 @@ interface Props {
 
 export default function MonitorModal({ monitor, onSave, onClose }: Props) {
   const [name, setName] = useState('')
-  const [group, setGroup] = useState('')
+  const [groupSlug, setGroupSlug] = useState('')
+  const [groups, setGroups] = useState<Group[]>([])
   const [url, setUrl] = useState('')
   const [expectedStatus, setExpectedStatus] = useState('200')
   const [alertEmails, setAlertEmails] = useState(monitor ? '' : 'contact@briarwoodsoftware.com')
@@ -21,9 +24,13 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    getGroups().then(setGroups).catch(() => {})
+  }, [])
+
+  useEffect(() => {
     if (monitor) {
       setName(monitor.name)
-      setGroup(monitor.group || '')
+      setGroupSlug(monitor.groupSlug || '')
       setUrl(monitor.url)
       setExpectedStatus(String(monitor.expectedStatus))
       setAlertEmails(monitor.alertEmails.join(', '))
@@ -45,7 +52,7 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
     try {
       await onSave({
         name: name.trim(),
-        group: group.trim(),
+        groupSlug: groupSlug || undefined,
         url: url.trim(),
         expectedStatus: parseInt(expectedStatus) || 200,
         alertEmails: alertEmails
@@ -96,12 +103,16 @@ export default function MonitorModal({ monitor, onSave, onClose }: Props) {
             <label className="mb-1 block text-sm text-zinc-400">
               Group (optional)
             </label>
-            <input
+            <select
               className={inputCls}
-              value={group}
-              onChange={(e) => setGroup(e.target.value)}
-              placeholder="e.g. GravMagnet, Briarwood"
-            />
+              value={groupSlug}
+              onChange={(e) => setGroupSlug(e.target.value)}
+            >
+              <option value="">No group</option>
+              {groups.filter((g) => g.isActive).map((g) => (
+                <option key={g.slug} value={g.slug}>{g.name}</option>
+              ))}
+            </select>
           </div>
 
           <div>
