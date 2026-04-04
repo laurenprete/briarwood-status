@@ -68,7 +68,7 @@ export interface HealthCheckResult {
   httpStatus: number | null
   status: string
   timestamp?: string
-  checks?: Record<string, { status: string; latencyMs?: number; error?: string }>
+  checks?: Record<string, { status: string; reason?: string; latencyMs?: number; error?: string }>
   error?: string
 }
 

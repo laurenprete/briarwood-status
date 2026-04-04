@@ -15,7 +15,8 @@ export interface Group {
 export interface Monitor {
   id: string
   name: string
-  group?: string
+  groupSlug?: string
+  groupName?: string
   url: string
   expectedStatus: number
   isActive: boolean
