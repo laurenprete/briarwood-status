@@ -9,7 +9,7 @@
 
 import { useState, useRef } from 'react'
 
-type DayUptime = { date: string; uptime: number | null; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }
+type DayUptime = { date: string; uptime: number | null; perf?: number; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }
 
 function formatDate(iso: string): string {
   if (!iso) return ''
@@ -30,11 +30,14 @@ function uptimeColor(uptime: number | null): string {
   return 'text-red-400'
 }
 
-function barColor(uptime: number | null, light: boolean): string {
-  if (uptime === null) return light ? 'bg-gray-200' : 'bg-zinc-700'
-  if (uptime >= 100) return 'bg-green-500'
-  if (uptime >= 97) return 'bg-amber-500'
-  return 'bg-red-500'
+function barColor(day: DayUptime, light: boolean): string {
+  if (day.uptime === null) return light ? 'bg-gray-200' : 'bg-zinc-700'
+  // Red: real downtime
+  if (day.uptime < 97) return 'bg-red-500'
+  // Amber: some downtime OR poor performance while up
+  if (day.uptime < 100 || (day.perf !== undefined && day.perf < 99)) return 'bg-amber-500'
+  // Green: fully up and fully healthy
+  return 'bg-green-500'
 }
 
 export default function UptimeBar({
@@ -79,7 +82,7 @@ export default function UptimeBar({
         {padded.map((d, i) => (
           <div
             key={i}
-            className={`h-6 flex-1 rounded-[2px] ${barColor(d.uptime, light)} transition-colors ${
+            className={`h-6 flex-1 rounded-[2px] ${barColor(d, light)} transition-colors ${
               hovered === i ? 'ring-1 ring-white/40' : ''
             }`}
             onMouseEnter={(e) => handleMouseEnter(i, e)}
@@ -103,9 +106,16 @@ export default function UptimeBar({
           </div>
 
           {day.date && day.uptime !== null && (
-            <div className={`mt-1 text-sm font-semibold ${uptimeColor(day.uptime)}`}>
-              {day.uptime.toFixed(1)}% uptime
-            </div>
+            <>
+              <div className={`mt-1 text-sm font-semibold ${uptimeColor(day.uptime)}`}>
+                {day.uptime.toFixed(1)}% uptime
+              </div>
+              {day.perf !== undefined && day.perf < 100 && (
+                <div className={`text-xs ${day.perf >= 95 ? 'text-amber-400/80' : 'text-red-400/80'}`}>
+                  {day.perf.toFixed(1)}% performance
+                </div>
+              )}
+            </>
           )}
 
           {day.date && day.uptime === null && (

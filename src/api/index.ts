@@ -92,9 +92,9 @@ function computeDailyUptime(
   checks: CheckResult[],
   days: number,
   nowMs: number
-): Array<{ date: string; uptime: number | null; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }> {
+): Array<{ date: string; uptime: number | null; perf?: number; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }> {
   // Build day buckets (midnight UTC boundaries)
-  const result: Array<{ date: string; uptime: number | null; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }> = []
+  const result: Array<{ date: string; uptime: number | null; perf?: number; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }> = []
   const msPerDay = 24 * 60 * 60 * 1000
 
   for (let i = days - 1; i >= 0; i--) {
@@ -124,9 +124,11 @@ function computeDailyUptime(
     }
 
     const affectedNames = Object.keys(affected)
+    const perf = calculatePerformance(dayChecks)
     result.push({
       date: dayStart.toISOString().slice(0, 10),
       uptime: calculateUptime(dayChecks),
+      ...(perf !== null && perf < 100 && { perf }),
       ...(affectedNames.length > 0 && {
         affectedSubsystems: affectedNames,
         affectedReasons: affected,

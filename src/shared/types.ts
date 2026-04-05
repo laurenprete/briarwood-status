@@ -78,7 +78,7 @@ export interface StatusSummary {
     perf24h: number | null
     perf7d: number | null
     perf30d: number | null
-    dailyUptime: Array<{ date: string; uptime: number | null; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }>
+    dailyUptime: Array<{ date: string; uptime: number | null; perf?: number; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }>
   }>
   overall: 'operational' | 'degraded' | 'outage'
   lastUpdated: string
