@@ -63,20 +63,19 @@ const RANGE_MS: Record<string, number> = {
   '30d': 30 * 24 * 60 * 60 * 1000,
 }
 
-const DEGRADED_UPTIME_WEIGHT = 0.5
-
 function calculateUptime(checks: CheckResult[]): number | null {
   if (checks.length === 0) return null
-  let score = 0
-  for (const c of checks) {
-    if (c.healthStatus === 'degraded') {
-      score += DEGRADED_UPTIME_WEIGHT
-    } else if (c.isUp) {
-      score += 1
-    }
-    // unhealthy / down / error = 0
-  }
-  return Math.round((score / checks.length) * 100 * 100) / 100
+  const upCount = checks.filter((c) => c.isUp).length
+  return Math.round((upCount / checks.length) * 100 * 100) / 100
+}
+
+function calculatePerformance(checks: CheckResult[]): number | null {
+  const upChecks = checks.filter((c) => c.isUp)
+  if (upChecks.length === 0) return null
+  const healthyCount = upChecks.filter((c) =>
+    c.healthStatus ? c.healthStatus === 'healthy' : true
+  ).length
+  return Math.round((healthyCount / upChecks.length) * 100 * 100) / 100
 }
 
 function parseRange(raw: string | undefined): string {
@@ -695,6 +694,9 @@ app.get('/status', async (c) => {
           uptime24h: calculateUptime(checks24h),
           uptime7d: calculateUptime(checks7d),
           uptime30d: calculateUptime(checks30d),
+          perf24h: calculatePerformance(checks24h),
+          perf7d: calculatePerformance(checks7d),
+          perf30d: calculatePerformance(checks30d),
           dailyUptime,
         }
       })

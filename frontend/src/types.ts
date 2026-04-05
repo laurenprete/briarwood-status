@@ -54,6 +54,9 @@ export interface StatusMonitor {
   uptime24h: number | null
   uptime7d: number | null
   uptime30d: number | null
+  perf24h: number | null
+  perf7d: number | null
+  perf30d: number | null
   dailyUptime: Array<{ date: string; uptime: number | null; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }>
 }
 

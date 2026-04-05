@@ -119,31 +119,36 @@ export default function MonitorDetail() {
             </div>
           </div>
 
-          {/* Uptime cards */}
+          {/* Uptime + Performance cards */}
           <div className="mb-6 grid grid-cols-3 gap-4">
             {[
-              { label: '24h Uptime', value: monitor.uptime24h },
-              { label: '7d Uptime', value: monitor.uptime7d },
-              { label: '30d Uptime', value: monitor.uptime30d },
-            ].map(({ label, value }) => (
+              { label: '24h', uptime: monitor.uptime24h, perf: monitor.perf24h },
+              { label: '7d', uptime: monitor.uptime7d, perf: monitor.perf7d },
+              { label: '30d', uptime: monitor.uptime30d, perf: monitor.perf30d },
+            ].map(({ label, uptime, perf }) => (
               <div
                 key={label}
                 className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 text-center"
               >
-                <div className="text-xs text-zinc-500">{label}</div>
+                <div className="text-xs text-zinc-500">{label} Uptime</div>
                 <div
                   className={`mt-1 text-2xl font-semibold ${
-                    value === null
+                    uptime === null
                       ? 'text-zinc-600'
-                      : value >= 99.9
+                      : uptime >= 99.9
                         ? 'text-green-400'
-                        : value >= 99
+                        : uptime >= 99
                           ? 'text-yellow-400'
                           : 'text-red-400'
                   }`}
                 >
-                  {value !== null ? `${value}%` : '—'}
+                  {uptime !== null ? `${uptime}%` : '—'}
                 </div>
+                {perf !== null && perf < 100 && (
+                  <div className={`mt-1 text-xs ${perf >= 95 ? 'text-amber-400/70' : 'text-red-400/70'}`}>
+                    perf: {perf}%
+                  </div>
+                )}
               </div>
             ))}
           </div>
