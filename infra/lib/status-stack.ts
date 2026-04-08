@@ -10,6 +10,9 @@ import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apigwv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as amplify from 'aws-cdk-lib/aws-amplify';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 
 export class BriarwoodStatusStack extends cdk.Stack {
   public constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -146,7 +149,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
       apiName: 'briarwood-status-api-gw',
       defaultIntegration: apiIntegration,
       corsPreflight: {
-        allowOrigins: ['https://status.briarwoodsoftware.com'],
+        allowOrigins: ['https://status.briarwoodsoftware.com', 'https://status-api.briarwoodsoftware.com'],
         allowMethods: [
           apigwv2.CorsHttpMethod.GET,
           apigwv2.CorsHttpMethod.POST,
@@ -159,6 +162,38 @@ export class BriarwoodStatusStack extends cdk.Stack {
       },
     });
 
+    // ─── Custom Domain for API Gateway ──────────────────────────────────
+
+    const hostedZone = route53.HostedZone.fromLookup(this, 'BriarwoodZone', {
+      domainName: 'briarwoodsoftware.com',
+    });
+
+    const apiCert = new acm.Certificate(this, 'ApiCertificate', {
+      domainName: 'status-api.briarwoodsoftware.com',
+      validation: acm.CertificateValidation.fromDns(hostedZone),
+    });
+
+    const apiDomainName = new apigwv2.DomainName(this, 'ApiDomainName', {
+      domainName: 'status-api.briarwoodsoftware.com',
+      certificate: apiCert,
+    });
+
+    new apigwv2.ApiMapping(this, 'ApiMapping', {
+      api: httpApi,
+      domainName: apiDomainName,
+    });
+
+    new route53.ARecord(this, 'ApiAliasRecord', {
+      zone: hostedZone,
+      recordName: 'status-api',
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.ApiGatewayv2DomainProperties(
+          apiDomainName.regionalDomainName,
+          apiDomainName.regionalHostedZoneId,
+        ),
+      ),
+    });
+
     // ─── Amplify Hosting (Frontend) ────────────────────────────────────
 
     const amplifyApp = new amplify.CfnApp(this, 'AmplifyApp', {
@@ -168,7 +203,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
         {
           // Proxy API requests to API Gateway (must come before SPA catch-all)
           source: '/api/<*>',
-          target: `${httpApi.apiEndpoint}/api/<*>`,
+          target: `https://status-api.briarwoodsoftware.com/api/<*>`,
           status: '200',
         },
         {
@@ -181,7 +216,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
       environmentVariables: [
         {
           name: 'VITE_API_URL',
-          value: `${httpApi.apiEndpoint}/api`,
+          value: `https://status-api.briarwoodsoftware.com/api`,
         },
         {
           name: 'VITE_COGNITO_CLIENT_ID',
@@ -223,7 +258,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
       environmentVariables: [
         {
           name: 'VITE_API_URL',
-          value: `${httpApi.apiEndpoint}/api`,
+          value: `https://status-api.briarwoodsoftware.com/api`,
         },
         {
           name: 'VITE_COGNITO_CLIENT_ID',
