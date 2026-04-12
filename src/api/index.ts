@@ -766,7 +766,7 @@ app.get('/health', async (c) => {
       const latencyMs = Date.now() - start
       const status: CheckStatus = coldStart
         ? 'healthy'
-        : latencyMs < 500 ? 'healthy' : latencyMs < 2000 ? 'degraded' : 'unhealthy'
+        : latencyMs < 1000 ? 'healthy' : latencyMs < 5000 ? 'degraded' : 'unhealthy'
       checks.dynamodb = {
         status,
         reason: coldStart
