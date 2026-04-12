@@ -7,7 +7,7 @@
     "build:api": "bun x esbuild src/api/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/api/index.js",
     "build:lambdas": "npm run build:checker && npm run build:api",
     "deploy:checker": "npm run build:checker && powershell Compress-Archive -Path dist/checker/index.js -DestinationPath dist/checker.zip -Force && aws lambda update-function-code --function-name briarwood-status-checker --zip-file fileb://dist/checker.zip --profile cdk-admin",
-    "deploy:api": "npm run build:api && powershell Compress-Archive -Path dist/api/index.js -DestinationPath dist/api.zip -Force && aws lambda update-function-code --function-name briarwood-status-api --zip-file fileb://dist/api.zip --profile cdk-admin",
+    "deploy:api": "npm run build:api && powershell Compress-Archive -Path dist/api/index.js -DestinationPath dist/api.zip -Force && aws lambda update-function-code --function-name briarwood-status-api --zip-file fileb://dist/api.zip --profile cdk-admin && node scripts/publish-api-version.js",
     "check": "npm run build:lambdas && cd frontend && npx tsc -b --noEmit"
   },
   "devDependencies": {
