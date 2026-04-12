@@ -103,7 +103,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
       functionName: 'briarwood-status-api',
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
-      timeout: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.seconds(60),
       memorySize: 256,
       code: lambda.Code.fromAsset(path.join(__dirname, '../../dist/api')),
       environment: {
@@ -138,11 +138,20 @@ export class BriarwoodStatusStack extends cdk.Stack {
     });
     scheduleRule.addTarget(new eventsTargets.LambdaFunction(checkerFn));
 
+    // ─── API Lambda Alias with Provisioned Concurrency ──────────────────
+
+    const apiAlias = new lambda.Alias(this, 'ApiLambdaLiveAlias', {
+      aliasName: 'live',
+      version: apiFn.currentVersion,
+      provisionedConcurrentExecutions: 1,
+    });
+    cdk.Tags.of(apiFn).add('expense-group', 'briarwood');
+
     // ─── HTTP API Gateway ──────────────────────────────────────────────
 
     const apiIntegration = new apigwv2Integrations.HttpLambdaIntegration(
       'ApiLambdaIntegration',
-      apiFn,
+      apiAlias,
     );
 
     const httpApi = new apigwv2.HttpApi(this, 'StatusHttpApi', {
