@@ -142,7 +142,7 @@ function computeDailyUptime(
 // --- In-memory cache for /status (30s TTL) ---
 
 let statusCache: { key: string; data: StatusSummary; expiresAt: number } | null = null
-const STATUS_CACHE_TTL_MS = 30_000
+const STATUS_CACHE_TTL_MS = 120_000
 let isFirstInvocation = true
 
 // --- Routes ---

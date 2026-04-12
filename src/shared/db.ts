@@ -140,10 +140,8 @@ export async function queryCheckResults(
         },
         ScanIndexForward: true,
         ExclusiveStartKey: lastKey,
-        // Use a per-page limit for efficiency, but continue paginating
-        ...(limit !== undefined && items.length + 1000 >= limit
-          ? { Limit: limit - items.length }
-          : { Limit: 1000 }),
+        // Let DynamoDB return up to its 1MB page limit for fewer round trips
+        ...(limit !== undefined && { Limit: Math.min(limit - items.length, 10000) }),
       })
     )
     if (res.Items) items.push(...(res.Items as CheckResult[]))
