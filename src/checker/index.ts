@@ -274,7 +274,7 @@ function computeNextState(
       (currentState.currentStatus === 'up' ||
         currentState.currentStatus === 'degraded' ||
         currentState.currentStatus === 'unknown') &&
-      failures >= 2
+      failures >= 3
     ) {
       // ---- Transition to down ----
       nextState = {
