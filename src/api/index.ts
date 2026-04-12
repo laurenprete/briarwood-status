@@ -652,10 +652,13 @@ app.get('/status', async (c) => {
       getAllMonitorStates(),
     ])
 
-    // Filter to public monitors only if not authenticated
-    const visibleMonitors = isAuthenticated
+    // Filter to public monitors only if not authenticated, and by group if specified
+    let visibleMonitors = isAuthenticated
       ? activeMonitors
       : activeMonitors.filter((m) => m.isPublic !== false)
+    if (groupSlugParam) {
+      visibleMonitors = visibleMonitors.filter((m) => m.groupSlug === groupSlugParam)
+    }
 
     const stateMap = new Map<string, MonitorState>(
       states.map((s) => [s.monitorId, s])
