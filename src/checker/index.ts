@@ -53,16 +53,6 @@ export const handler = async (): Promise<void> => {
 
   await Promise.all(monitors.map((monitor) => processMonitor(monitor)))
 
-  // Warm the /api/status cache so visitors never hit a cold computation
-  try {
-    await fetch('https://status-api.briarwoodsoftware.com/api/status', {
-      signal: AbortSignal.timeout(25_000),
-    })
-    console.log('[checker] Status cache warmed')
-  } catch {
-    console.warn('[checker] Failed to warm status cache (non-critical)')
-  }
-
   console.log('[checker] Run complete')
 }
 
