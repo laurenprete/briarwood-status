@@ -43,6 +43,14 @@ export class BriarwoodStatusStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    const dailyStatsTable = new dynamodb.Table(this, 'DailyStatsTable', {
+      tableName: 'briarwood-status-daily-stats',
+      partitionKey: { name: 'monitorId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'date', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     const groupsTable = new dynamodb.Table(this, 'GroupsTable', {
       tableName: 'briarwood-status-groups',
       partitionKey: { name: 'slug', type: dynamodb.AttributeType.STRING },
@@ -94,6 +102,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
         MONITORS_TABLE: monitorsTable.tableName,
         CHECK_RESULTS_TABLE: checkResultsTable.tableName,
         MONITOR_STATE_TABLE: monitorStateTable.tableName,
+        DAILY_STATS_TABLE: dailyStatsTable.tableName,
         SMTP2GO_API_KEY: smtp2goSecret.secretValue.unsafeUnwrap(),
         HEALTH_CHECK_TOKEN: healthCheckToken.secretValue.unsafeUnwrap(),
       },
@@ -115,6 +124,7 @@ export class BriarwoodStatusStack extends cdk.Stack {
         COGNITO_REGION: 'us-east-1',
         HEALTH_CHECK_TOKEN: healthCheckToken.secretValue.unsafeUnwrap(),
         GROUPS_TABLE: groupsTable.tableName,
+        DAILY_STATS_TABLE: dailyStatsTable.tableName,
         LOGO_BUCKET: logoBucket.bucketName,
       },
     });
@@ -123,10 +133,12 @@ export class BriarwoodStatusStack extends cdk.Stack {
     monitorsTable.grantReadWriteData(checkerFn);
     checkResultsTable.grantReadWriteData(checkerFn);
     monitorStateTable.grantReadWriteData(checkerFn);
+    dailyStatsTable.grantReadWriteData(checkerFn);
 
     monitorsTable.grantReadWriteData(apiFn);
     checkResultsTable.grantReadWriteData(apiFn);
     monitorStateTable.grantReadWriteData(apiFn);
+    dailyStatsTable.grantReadData(apiFn);
     groupsTable.grantReadWriteData(apiFn);
     logoBucket.grantReadWrite(apiFn);
 

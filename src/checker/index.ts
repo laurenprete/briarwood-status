@@ -3,9 +3,11 @@ import {
   writeCheckResult,
   getMonitorState,
   putMonitorState,
+  queryCheckResults,
+  putDailyStats,
 } from '../shared/db'
 import { validateMonitorUrl } from '../shared/url-validator'
-import type { AlertPayload, CheckResult, Monitor, MonitorState } from '../shared/types'
+import type { AlertPayload, CheckResult, Monitor, MonitorState, DailyStats } from '../shared/types'
 
 type CheckEngineResult = {
   statusCode: number | null
@@ -53,7 +55,76 @@ export const handler = async (): Promise<void> => {
 
   await Promise.all(monitors.map((monitor) => processMonitor(monitor)))
 
+  // Update daily stats for today — runs after all checks are written
+  try {
+    await updateDailyStats(monitors)
+  } catch (err) {
+    console.error('[checker] Failed to update daily stats (non-critical)', err)
+  }
+
   console.log('[checker] Run complete')
+}
+
+// ---------------------------------------------------------------------------
+// Daily stats aggregation
+// ---------------------------------------------------------------------------
+
+async function updateDailyStats(monitors: Monitor[]): Promise<void> {
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  const todayStr = today.toISOString().slice(0, 10)
+  const todayISO = today.toISOString()
+
+  await Promise.all(monitors.map(async (monitor) => {
+    try {
+      const checks = await queryCheckResults(monitor.id, todayISO)
+      if (checks.length === 0) return
+
+      const upChecks = checks.filter((c) => c.isUp)
+      const healthyChecks = upChecks.filter((c) =>
+        c.healthStatus ? c.healthStatus === 'healthy' : true
+      )
+
+      const uptime = Math.round((upChecks.length / checks.length) * 100 * 100) / 100
+      const perf = upChecks.length > 0
+        ? Math.round((healthyChecks.length / upChecks.length) * 100 * 100) / 100
+        : null
+
+      // Collect affected subsystems
+      const affected: Record<string, string> = {}
+      for (const c of checks) {
+        if (c.checks) {
+          for (const [name, check] of Object.entries(c.checks)) {
+            if (check.status !== 'healthy') {
+              if (!affected[name] || check.status === 'unhealthy') {
+                affected[name] = check.reason || check.status
+              }
+            }
+          }
+        }
+      }
+
+      const affectedNames = Object.keys(affected)
+
+      const stats: DailyStats = {
+        monitorId: monitor.id,
+        date: todayStr,
+        totalChecks: checks.length,
+        upChecks: upChecks.length,
+        healthyChecks: healthyChecks.length,
+        uptime,
+        perf,
+        ...(affectedNames.length > 0 && {
+          affectedSubsystems: affectedNames,
+          affectedReasons: affected,
+        }),
+      }
+
+      await putDailyStats(stats)
+    } catch (err) {
+      console.error(`[checker] Failed to update daily stats for ${monitor.name}`, err)
+    }
+  }))
 }
 
 // ---------------------------------------------------------------------------

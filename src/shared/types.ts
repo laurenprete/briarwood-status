@@ -84,6 +84,18 @@ export interface StatusSummary {
   lastUpdated: string
 }
 
+export interface DailyStats {
+  monitorId: string
+  date: string                    // YYYY-MM-DD, sort key
+  totalChecks: number
+  upChecks: number
+  healthyChecks: number
+  uptime: number | null           // percentage
+  perf: number | null             // percentage
+  affectedSubsystems?: string[]
+  affectedReasons?: Record<string, string>
+}
+
 export interface AlertPayload {
   type: 'down' | 'recovery'
   monitor: Monitor

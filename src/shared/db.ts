@@ -7,7 +7,7 @@ import {
   ScanCommand,
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb'
-import type { Monitor, CheckResult, MonitorState, Group } from './types'
+import type { Monitor, CheckResult, MonitorState, Group, DailyStats } from './types'
 
 const client = new DynamoDBClient({})
 const ddb = DynamoDBDocumentClient.from(client)
@@ -16,6 +16,7 @@ const MONITORS_TABLE = process.env.MONITORS_TABLE!
 const CHECK_RESULTS_TABLE = process.env.CHECK_RESULTS_TABLE!
 const MONITOR_STATE_TABLE = process.env.MONITOR_STATE_TABLE!
 const GROUPS_TABLE = process.env.GROUPS_TABLE!
+const DAILY_STATS_TABLE = process.env.DAILY_STATS_TABLE!
 
 // --- Monitors ---
 
@@ -243,4 +244,40 @@ export async function deleteGroup(slug: string): Promise<void> {
   await ddb.send(
     new DeleteCommand({ TableName: GROUPS_TABLE, Key: { slug } })
   )
+}
+
+// --- Daily Stats ---
+
+export async function putDailyStats(stats: DailyStats): Promise<void> {
+  await ddb.send(
+    new PutCommand({ TableName: DAILY_STATS_TABLE, Item: stats })
+  )
+}
+
+export async function queryDailyStats(
+  monitorId: string,
+  fromDate: string,
+): Promise<DailyStats[]> {
+  const items: DailyStats[] = []
+  let lastKey: Record<string, any> | undefined
+
+  do {
+    const res = await ddb.send(
+      new QueryCommand({
+        TableName: DAILY_STATS_TABLE,
+        KeyConditionExpression: 'monitorId = :mid AND #d >= :from',
+        ExpressionAttributeNames: { '#d': 'date' },
+        ExpressionAttributeValues: {
+          ':mid': monitorId,
+          ':from': fromDate,
+        },
+        ScanIndexForward: true,
+        ExclusiveStartKey: lastKey,
+      })
+    )
+    if (res.Items) items.push(...(res.Items as DailyStats[]))
+    lastKey = res.LastEvaluatedKey
+  } while (lastKey)
+
+  return items
 }

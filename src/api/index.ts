@@ -4,7 +4,7 @@ import { cors } from 'hono/cors'
 import { randomUUID } from 'crypto'
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import type { Monitor, MonitorState, StatusSummary, CheckResult, Group } from '../shared/types'
+import type { Monitor, MonitorState, StatusSummary, CheckResult, Group, DailyStats } from '../shared/types'
 import {
   listMonitors,
   getMonitor,
@@ -19,6 +19,7 @@ import {
   getGroup,
   putGroup,
   deleteGroup as deleteGroupRecord,
+  queryDailyStats,
 } from '../shared/db'
 import { authMiddleware } from '../shared/auth'
 import { createMonitorSchema, updateMonitorSchema, firstZodError, createGroupSchema, updateGroupSchema, slugify } from '../shared/validation'
@@ -664,26 +665,61 @@ app.get('/status', async (c) => {
       states.map((s) => [s.monitorId, s])
     )
 
-    const now = Date.now()
-    const from30d = new Date(now - RANGE_MS['30d']).toISOString()
-    const threshold24h = now - RANGE_MS['24h']
-    const threshold7d = now - RANGE_MS['7d']
+    const now = new Date()
+    const from30d = new Date(now.getTime() - RANGE_MS['30d'])
+    from30d.setUTCHours(0, 0, 0, 0)
+    const fromDateStr = from30d.toISOString().slice(0, 10)
 
     const monitors = await Promise.all(
       visibleMonitors.map(async (monitor) => {
         const state = stateMap.get(monitor.id)
 
-        // Query once for 30d, then compute 24h/7d from the same result set
-        const checks30d = await queryCheckResults(monitor.id, from30d)
-        const checks7d = checks30d.filter(
-          (c) => new Date(c.timestamp).getTime() >= threshold7d
-        )
-        const checks24h = checks30d.filter(
-          (c) => new Date(c.timestamp).getTime() >= threshold24h
-        )
+        // Read pre-computed daily stats (max 30 rows per monitor)
+        const dailyStats = await queryDailyStats(monitor.id, fromDateStr)
+        const statsMap = new Map(dailyStats.map((s) => [s.date, s]))
 
-        // Compute per-day uptime for the last 30 days (oldest first)
-        const dailyUptime = computeDailyUptime(checks30d, 30, now)
+        // Build daily uptime array (30 days, oldest first)
+        const dailyUptime: Array<{ date: string; uptime: number | null; perf?: number; affectedSubsystems?: string[]; affectedReasons?: Record<string, string> }> = []
+        const msPerDay = 24 * 60 * 60 * 1000
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(now.getTime() - i * msPerDay)
+          d.setUTCHours(0, 0, 0, 0)
+          const dateStr = d.toISOString().slice(0, 10)
+          const s = statsMap.get(dateStr)
+          if (s) {
+            dailyUptime.push({
+              date: dateStr,
+              uptime: s.uptime,
+              ...(s.perf !== null && s.perf !== undefined && s.perf < 100 && { perf: s.perf }),
+              ...(s.affectedSubsystems && s.affectedSubsystems.length > 0 && {
+                affectedSubsystems: s.affectedSubsystems,
+                affectedReasons: s.affectedReasons,
+              }),
+            })
+          } else {
+            dailyUptime.push({ date: dateStr, uptime: null })
+          }
+        }
+
+        // Compute period rollups from daily stats
+        const now7d = new Date(now.getTime() - RANGE_MS['7d'])
+        now7d.setUTCHours(0, 0, 0, 0)
+        const now24h = new Date(now.getTime() - RANGE_MS['24h'])
+        now24h.setUTCHours(0, 0, 0, 0)
+
+        function rollup(stats: DailyStats[], fromDate: Date) {
+          const relevant = stats.filter((s) => s.date >= fromDate.toISOString().slice(0, 10))
+          const totalChecks = relevant.reduce((sum, s) => sum + s.totalChecks, 0)
+          const upChecks = relevant.reduce((sum, s) => sum + s.upChecks, 0)
+          const healthyChecks = relevant.reduce((sum, s) => sum + s.healthyChecks, 0)
+          const uptime = totalChecks > 0 ? Math.round((upChecks / totalChecks) * 100 * 100) / 100 : null
+          const perf = upChecks > 0 ? Math.round((healthyChecks / upChecks) * 100 * 100) / 100 : null
+          return { uptime, perf }
+        }
+
+        const r30d = rollup(dailyStats, from30d)
+        const r7d = rollup(dailyStats, now7d)
+        const r24h = rollup(dailyStats, now24h)
 
         return {
           id: monitor.id,
@@ -696,12 +732,12 @@ app.get('/status', async (c) => {
           lastCheckedAt: state?.lastCheckedAt ?? null,
           lastResponseTime: state?.lastResponseTime ?? null,
           ...(state?.lastChecks && { lastChecks: state.lastChecks }),
-          uptime24h: calculateUptime(checks24h),
-          uptime7d: calculateUptime(checks7d),
-          uptime30d: calculateUptime(checks30d),
-          perf24h: calculatePerformance(checks24h),
-          perf7d: calculatePerformance(checks7d),
-          perf30d: calculatePerformance(checks30d),
+          uptime24h: r24h.uptime,
+          uptime7d: r7d.uptime,
+          uptime30d: r30d.uptime,
+          perf24h: r24h.perf,
+          perf7d: r7d.perf,
+          perf30d: r30d.perf,
           dailyUptime,
         }
       })
